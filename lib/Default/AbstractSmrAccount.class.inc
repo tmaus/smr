@@ -69,6 +69,9 @@ abstract class AbstractSmrAccount {
 	protected $template;
 	protected $hotkeys = array();
 	protected $permissions;
+	protected $friendlyColour;
+	protected $neutralColour;
+	protected $enemyColour;
 
 	protected $npc;
 
@@ -126,7 +129,7 @@ abstract class AbstractSmrAccount {
 		}
 	}
 
-	public static function &createAccount($login,$password,$email,$first_name,$last_name,$address,$city,$postal_code,$country_code,$icq,$timez,$referral) {
+	public static function &createAccount($login,$password,$email,$first_name,$last_name,$address,$city,$postal_code,$country_code,$timez,$referral) {
 		if($referral!=0) {
 			try {
 				SmrAccount::getAccount($referral);
@@ -136,11 +139,11 @@ abstract class AbstractSmrAccount {
 			}
 		}
 		$db = new SmrMySqlDatabase();
-		$db->query('INSERT INTO account (login, password, email, first_name, last_name, address, city, postal_code, country_code, icq, validation_code, last_login, offset,referral_id,hof_name) VALUES(' .
+		$db->query('INSERT INTO account (login, password, email, first_name, last_name, address, city, postal_code, country_code, validation_code, last_login, offset,referral_id,hof_name) VALUES(' .
 			$db->escape_string($login) . ', ' . $db->escape_string(md5($password)) . ', ' . $db->escape_string($email) . ', ' .
 			$db->escape_string($first_name) . ', ' . $db->escape_string($last_name) . ', ' .
 			$db->escape_string($address) . ', ' . $db->escape_string($city) . ', ' . $db->escape_string($postal_code) . ', ' .
-			$db->escape_string($country_code) . ', ' . $db->escape_string(trim($icq)) . ', ' . $db->escape_string(substr(SmrSession::$session_id, 0, 10)) . ',' . $db->escapeNumber(TIME) . ',' . $db->escapeNumber($timez) . ',' . $db->escapeNumber($referral).','.$db->escapeString($login).')');
+			$db->escape_string($country_code) . ', ' . $db->escape_string(substr(SmrSession::$session_id, 0, 10)) . ',' . $db->escapeNumber(TIME) . ',' . $db->escapeNumber($timez) . ',' . $db->escapeNumber($referral).','.$db->escapeString($login).')');
 		return self::getAccountByName($login);
 	}
 
@@ -182,6 +185,10 @@ abstract class AbstractSmrAccount {
 			$this->passwordReset	= $row['password_reset'];
 			$this->useAJAX			= $this->db->getBoolean('use_ajax');
 			$this->mailBanned		= (int)$row['mail_banned'];
+			
+			$this->friendlyColour 	= $row['friendly_colour'];
+			$this->neutralColour 	= $row['neutral_colour'];
+			$this->enemyColour 		= $row['enemy_colour'];
 
 			$this->cssLink			= $row['css_link'];
 			$this->defaultCSSEnabled	= $this->db->getBoolean('default_css_enabled');
@@ -276,6 +283,9 @@ abstract class AbstractSmrAccount {
 			', fontsize = ' . $this->db->escapeNumber($this->fontSize).
 			', css_link = ' . $this->db->escapeString($this->cssLink,true,true).
 			', cell_phone = ' . $this->db->escapeString($this->cellPhone, true, true).
+			', friendly_colour = ' . $this->db->escapeString($this->friendlyColour, true, true).
+			', neutral_colour = ' . $this->db->escapeString($this->neutralColour, true, true).
+			', enemy_colour = ' . $this->db->escapeString($this->enemyColour, true, true).
 			' WHERE account_id = '.$this->db->escapeNumber($this->account_id).' LIMIT 1');
 		$this->hasChanged = false;
 	}
@@ -694,11 +704,11 @@ abstract class AbstractSmrAccount {
 				}
 
 				$db = new SmrMySqlDatabase();
-				$db->query('INSERT INTO account (login, password, email, first_name, last_name, address, city, postal_code, country_code, icq, validation_code, veteran, last_login, logging, offset,images,fontsize,referral_id,hof_name,validated) VALUES(' .
+				$db->query('INSERT INTO account (login, password, email, first_name, last_name, address, city, postal_code, country_code, validation_code, veteran, last_login, logging, offset,images,fontsize,referral_id,hof_name,validated) VALUES(' .
 							$db->escape_string($db2->getField('login')) . ', ' . $db->escape_string(md5($db2->getField('password'))) . ', ' . $db->escape_string($db2->getField('email')) . ', ' .
 							$db->escape_string($db2->getField('first_name')) . ', ' . $db->escape_string($db2->getField('last_name')) . ', ' .
 							$db->escape_string($db2->getField('address')) . ', ' . $db->escape_string($db2->getField('city')) . ', ' . $db->escape_string($db2->getField('postal_code')) . ', ' .
-							$db->escape_string($db2->getField('country_code')) . ', ' . $db->escape_string($db2->getField('icq')) . ', ' . $db->escape_string($db2->getField('validation_code')) . ',' .
+							$db->escape_string($db2->getField('country_code')) . ', ' . $db->escape_string($db2->getField('validation_code')) . ',' .
 							$db->escape_string($db2->getField('veteran')) . ',' . $db->escapeBoolean(false) . ',' . TIME . ',' .$db->escapeNumber($db2->getInt('offset')).',' .
 							$db->escapeString($db2->getField('images')).','.$db->escapeString($db2->getField('fontsize')+20).','.$db->escapeNumber(0).','.$db->escapeString($db2->getField('login')).','.$db->escapeString($db2->getField('validated')).')');
 
@@ -731,8 +741,9 @@ abstract class AbstractSmrAccount {
 	}
 
 	public function setEmail($email) {
-		if($this->$email==$email)
+		if($this->email==$email) {
 			return;
+		}
 		$this->email = $email;
 		$this->hasChanged = true;
 		$this->update();
@@ -1151,6 +1162,28 @@ abstract class AbstractSmrAccount {
 		$this->banAccount($expireTime,$admin,$reasonID,$suspicion);
 
 		return $days;
+	}
+	
+	public function getFriendlyColour() {
+		return $this->friendlyColour;
+	}
+	public function setFriendlyColour($colour) {
+		$this->friendlyColour = $colour;
+		$this->hasChanged = true;
+	}
+	public function getNeutralColour() {
+		return $this->neutralColour;
+	}
+	public function setNeutralColour($colour) {
+		$this->neutralColour = $colour;
+		$this->hasChanged = true;
+	}
+	public function getEnemyColour() {
+		return $this->enemyColour;
+	}
+	public function setEnemyColour($colour) {
+		$this->enemyColour = $colour;
+		$this->hasChanged = true;
 	}
 
 	public function banAccount($expireTime,SmrAccount &$admin,$reasonID,$suspicion,$removeExceptions = false) {

@@ -247,7 +247,7 @@ class Template {
 		}
 		$damageTypes--;
 	}
-	
+
 	protected function doAn($wordAfter) {
 		$char = strtoupper($wordAfter[0]);
 		if($char == 'A' || $char == 'E' || $char == 'I' || $char == 'O' || $char == 'U') {
@@ -256,6 +256,16 @@ class Template {
 		else {
 			echo 'a';
 		}
+	}
+
+	protected function pluralise($word, $count = 0) {
+		if($count == 1) {
+			return $word;
+		}
+		if(strtolower($word) == 'is') {
+			return 'are';
+		}
+		return $word . 's';
 	}
 	
 	/*
@@ -286,8 +296,6 @@ class Template {
 			return '';
 		}
 
-		require_once(LIB.'External/phpQuery/phpQuery.php');
-		
 		$xml='';
 		$html = phpQuery::newDocument($str);
 		$searches = array('span[id]','.ajax');

@@ -33,7 +33,7 @@
 										echo $Ship->getIllusionShipName();
 									}
 									else if($Ship->getName() != $Ship->getIllusionShipName()) {
-										?> <span class="npcColor">(<?php echo $Ship->getIllusionShipName(); ?>)</span><?php
+										?> <span class="npcColour">(<?php echo $Ship->getIllusionShipName(); ?>)</span><?php
 									}
 								}
 								if($Ship->isCloaked()) {
@@ -49,19 +49,39 @@
 										echo $Ship->getIllusionAttack(); ?> / <?php echo $Ship->getIllusionDefense();
 									}
 									else if($Ship->getAttackRating() != $Ship->getIllusionAttack() || $Ship->getDefenseRating() != $Ship->getIllusionDefense()) {
-										?> <span class="npcColor">(<?php echo $Ship->getIllusionAttack(); ?> / <?php echo $Ship->getIllusionDefense(); ?>)</span><?php
+										?> <span class="npcColour">(<?php echo $Ship->getIllusionAttack(); ?> / <?php echo $Ship->getIllusionDefense(); ?>)</span><?php
 									}
 								} ?></td>
 							<td class="shrink center noWrap"><?php echo $Player->getLevelID() ?></td>
 							<td class="shrink center noWrap">
 								<div class="buttonA"><?php
 									if($PlayersContainer instanceof SmrPlanet) {
-										if($ThisPlanet->getOwnerID() == $ThisPlayer->getAccountID() && !$ThisPlayer->equals($Player)) {
-											?><a href="<?php echo $Player->getPlanetKickHREF() ?>" class="buttonA<?php if(!$ThisPlayer->traderNAPAlliance($Player)){ ?> enemyExamine<?php } ?>"> Kick </a><?php
+										if($ThisPlanet->getOwnerID() == $ThisPlayer->getAccountID()) {
+											?><a href="<?php echo $Player->getPlanetKickHREF() ?>" class="<?php 
+												if(!$ThisPlayer->traderNAPAlliance($Player)){ 
+													if ($Player->canFight()) {
+														?> enemy<?php 
+													} else {
+														?> neutral<?php 
+													}
+												} else {
+													?> friendly<?php 
+												}
+												?>"> Kick </a><?php
 										}
 									}
 									else {
-										?><a href="<?php echo $Player->getExamineTraderHREF() ?>" class="buttonA<?php if(!$ThisPlayer->traderNAPAlliance($Player)){ ?> enemyExamine<?php } ?>"> Examine </a><?php
+										?><a href="<?php echo $Player->getExamineTraderHREF() ?>" class="<?php 
+											if(!$ThisPlayer->traderNAPAlliance($Player)){ 
+												if ($Player->canFight()) {
+													?> enemy<?php 
+												} else {
+													?> neutral<?php 
+												}	
+											} else {
+												?> friendly<?php 
+											}
+										?>"> Examine </a><?php
 									} ?>
 								</div>
 							</td>

@@ -2,10 +2,13 @@
 require_once(get_file_loc('SmrGalaxy.class.inc'));
 require_once(get_file_loc('SmrSector.class.inc'));
 require_once(get_file_loc('SmrLocation.class.inc'));
-$submit = isset($_REQUEST['submit'])?$_REQUEST['submit']:'';
+$submit = isset($var['submit']) ? $var['submit'] : (isset($_REQUEST['submit'])?$_REQUEST['submit']:'');
+unset($var['submit']);
 
 if ($submit=='Create Game') {
-	$var['num_gals'] = $_REQUEST['num_gals'];
+	if(!is_numeric($_REQUEST['num_gals'])) {
+		create_error('Number of galaxies must be a number');
+	}
 	if(!is_numeric($_REQUEST['game_speed']))
 		create_error('Game speed must be a number.');
 	if(!is_numeric($_REQUEST['max_turns']))
@@ -24,6 +27,9 @@ if ($submit=='Create Game') {
 		create_error('Starting credits must be a number.');
 	if(!is_numeric($_REQUEST['creds_needed']))
 		create_error('Credits required must be a number.');
+
+	$var['num_gals'] = $_REQUEST['num_gals'];
+
 	//first create the game
 	$db->query('SELECT game_id FROM game WHERE game_name='.$db->escapeString($_REQUEST['game_name']).' LIMIT 1');
 	if($db->nextRecord())
@@ -83,7 +89,15 @@ else if ($submit=='Redo Connections') {
 	SmrSector::saveSectors();
 }
 elseif ($submit == 'Jump To Galaxy') {
-	$var['gal_on'] = $_REQUEST['jumpgal'];
+	if(!is_numeric($_REQUEST['jumpgal'])) {
+		create_error('New galaxy must be a number.');
+	}
+	$var['gal_on'] = (int)$_REQUEST['jumpgal'];
+}
+elseif ($submit == 'Toggle Link') {
+	$sector =& SmrSector::getSector($var['game_id'],$var['sector_id']);
+	$sector->toggleLink($var['dir']);
+	SmrSector::saveSectors();
 }
 elseif ($submit == 'Modify Sector') {
 	if(!empty($_POST['sector_edit'])) {
@@ -153,39 +167,27 @@ elseif ($submit == 'Create Planets') {
 	$galaxies =& SmrGalaxy::getGameGalaxies($var['game_id']);
 	$galaxy =& SmrGalaxy::getGalaxy($var['game_id'],$var['gal_on']);
 	$galSectors =& $galaxy->getSectors();
-	//get totals
-	$numberOfPlanets=0;
 	foreach ($galSectors as &$galSector) {
 		if($galSector->hasPlanet()) {
 			$galSector->removePlanet();
 		}
 	}
-	$numberOfPlanets = $_POST['Uninhab'];
 //	$numberOfNpcPlanets = $_POST['NPC'];
-	$updatePlan = array();
-	$updatePlan['Uninhab'] = $num_uninhab;
-	$updatePlan['NPC'] = $num_npc;
-	
-	for ($i=1;$i<=$numberOfPlanets;$i++) {
-		$galSector =& $galSectors[array_rand($galSectors)];
-		while ($galSector->hasPlanet()) $galSector =& $galSectors[array_rand($galSectors)]; //1 per sector
 
-		$galSector->createPlanet();
-		//inhabitable between 7 and 10 days (from start of game)
-//		$updatePlan[$sector]['Inhabitable'] = $start_time + mt_rand(7,10) * 3600 * 24;
-//		$updatePlan[$sector]['Owner'] = 0;
-//		$updatePlan[$sector]['Owner Type'] = 'Player';
+	$allowedTypeIDs = array();
+	$db->query('SELECT planet_type_id FROM planet_type');
+	while ($db->nextRecord()) {
+		$allowedTypeIDs[] = $db->getInt('planet_type_id');
 	}
-//	for ($i=1;$i<=$numberOfNpcPlanets;$i++) {
-//		$galSector =& $galSectors[array_rand($galSectors)];
-//		while ($galSector->hasPlanet()) $galSector =& $galSectors[array_rand($galSectors)]; //1 per sector
-//
-//		$galSector->createPlanet();
-//		//NPC Controlled
-//		$updatePlan[$sector]['Inhabitable'] = $start_time + mt_rand(7,10) * 3600 * 24;
-//		$updatePlan[$sector]['Owner'] = 0; //owning NPC to be determined in the create script
-//		$updatePlan[$sector]['Owner Type'] = 'NPC';
-//	}
+
+	foreach ($allowedTypeIDs as $planetTypeID) {
+		$numberOfPlanets = $_POST['type' . $planetTypeID];
+		for ($i=1;$i<=$numberOfPlanets;$i++) {
+			$galSector =& $galSectors[array_rand($galSectors)];
+			while ($galSector->hasPlanet()) $galSector =& $galSectors[array_rand($galSectors)]; //1 per sector
+			$galSector->createPlanet($planetTypeID);
+		}
+	}
 	$var['message'] = '<span class="green">Success</span> : Succesfully added planets.';
 }
 elseif ($submit == 'Create Ports and Mines') {
@@ -281,15 +283,26 @@ elseif ($submit == 'Edit Sector') {
 	else
 		$sector->disableLink('Right');
 	//update planet
-	if ($_POST['plan_type'] == 'Uninhab') {
-		$sector->createPlanet();
+	if ($_POST['plan_type'] != '0') {
+		if (!$sector->hasPlanet()) {
+			$sector->createPlanet($_POST['plan_type']);
+		}
+		else {
+			$type = $sector->getPlanet()->getTypeID();
+			if ($_POST['plan_type'] != $type) {
+				$sector->getPlanet()->setTypeID($_POST['plan_type']);
+			}
+		}
 	}
+	
 //	elseif ($_POST['plan_type'] == 'NPC') {
 //		$GAL_PLANETS[$this_sec]['Inhabitable'] = 1;
 //		$GAL_PLANETS[$this_sec]['Owner'] = 0;
 //		$GAL_PLANETS[$this_sec]['Owner Type'] = 'NPC';
 //	}
-	else $sector->removePlanet();
+	else {
+		$sector->removePlanet();
+	}
 	//update port
 	if ($_POST['port_level'] > 0) {
 		if(!$sector->hasPort()) {
@@ -431,8 +444,9 @@ function createGame($gameID) {
 	$exemptWith = TRUE;
 	$mbMessages = TRUE;
 	$sendAllMsg = TRUE;
-	$db->query('REPLACE INTO alliance_has_roles (alliance_id, game_id, role_id, role, with_per_day, remove_member, change_pass, change_mod, change_roles, planet_access, exempt_with, mb_messages, send_alliance_msg)
-				VALUES (' . $db->escapeNumber(NHA_ID) . ', ' . $db->escapeNumber($gameID) . ', 1, \'Leader\', ' . $db->escapeNumber($withPerDay) . ', ' . $db->escapeBoolean($removeMember) . ', ' . $db->escapeBoolean($changePass) . ', ' . $db->escapeBoolean($changeMOD) . ', ' . $db->escapeBoolean($changeRoles) . ', ' . $db->escapeBoolean($planetAccess) . ', ' . $db->escapeBoolean($exemptWith) . ', ' . $db->escapeBoolean($mbMessages) . ', ' . $db->escapeBoolean($sendAllMsg) . ')');
+	$viewBonds = TRUE;
+	$db->query('REPLACE INTO alliance_has_roles (alliance_id, game_id, role_id, role, with_per_day, remove_member, change_pass, change_mod, change_roles, planet_access, exempt_with, mb_messages, send_alliance_msg, view_bonds)
+				VALUES (' . $db->escapeNumber(NHA_ID) . ', ' . $db->escapeNumber($gameID) . ', 1, \'Leader\', ' . $db->escapeNumber($withPerDay) . ', ' . $db->escapeBoolean($removeMember) . ', ' . $db->escapeBoolean($changePass) . ', ' . $db->escapeBoolean($changeMOD) . ', ' . $db->escapeBoolean($changeRoles) . ', ' . $db->escapeBoolean($planetAccess) . ', ' . $db->escapeBoolean($exemptWith) . ', ' . $db->escapeBoolean($mbMessages) . ', ' . $db->escapeBoolean($sendAllMsg) . ', ' . $db->escapeBoolean($viewBonds) . ')');
 	$withPerDay = ALLIANCE_BANK_UNLIMITED;
 	$removeMember = FALSE;
 	$changePass = FALSE;
@@ -442,8 +456,9 @@ function createGame($gameID) {
 	$exemptWith = FALSE;
 	$mbMessages = FALSE;
 	$sendAllMsg = FALSE;
-	$db->query('REPLACE INTO alliance_has_roles (alliance_id, game_id, role_id, role, with_per_day, remove_member, change_pass, change_mod, change_roles, planet_access, exempt_with, mb_messages, send_alliance_msg) ' .
-				'VALUES (' . $db->escapeNumber(NHA_ID) . ', ' . $db->escapeNumber($gameID) . ', 2, \'New Member\', ' . $db->escapeNumber($withPerDay) . ', ' . $db->escapeBoolean($removeMember).', '.$db->escapeBoolean($changePass).', '.$db->escapeBoolean($changeMOD).', '.$db->escapeBoolean($changeRoles).', '.$db->escapeBoolean($planetAccess).', '.$db->escapeBoolean($exemptWith).', '.$db->escapeBoolean($mbMessages).', '.$db->escapeBoolean($sendAllMsg).')');
+	$viewBonds = FALSE;
+	$db->query('REPLACE INTO alliance_has_roles (alliance_id, game_id, role_id, role, with_per_day, remove_member, change_pass, change_mod, change_roles, planet_access, exempt_with, mb_messages, send_alliance_msg, view_bonds) ' .
+				'VALUES (' . $db->escapeNumber(NHA_ID) . ', ' . $db->escapeNumber($gameID) . ', 2, \'New Member\', ' . $db->escapeNumber($withPerDay) . ', ' . $db->escapeBoolean($removeMember).', '.$db->escapeBoolean($changePass).', '.$db->escapeBoolean($changeMOD).', '.$db->escapeBoolean($changeRoles).', '.$db->escapeBoolean($planetAccess).', '.$db->escapeBoolean($exemptWith).', '.$db->escapeBoolean($mbMessages).', '.$db->escapeBoolean($sendAllMsg) . ', ' . $db->escapeBoolean($viewBonds) . ')');
 	$db->query('REPLACE INTO player_has_alliance_role (game_id, account_id, role_id, alliance_id) VALUES (' . $db->escapeNumber($gameID) . ', ' . $db->escapeNumber(ACCOUNT_ID_NHL) . ', 1,' . $db->escapeNumber(NHA_ID) . ')');
 	
 	// NHA default topics
@@ -647,8 +662,8 @@ function createGame($gameID) {
 	
 	$db->query('REPLACE INTO alliance_thread_topic (game_id, alliance_id, thread_id, topic) VALUES (' . $db->escapeNumber($gameID) . ', ' . $db->escapeNumber(NHA_ID) . ', 22, \'Ships\')');
 	$text = 'Everything you do in SMR is done while you are flying some kind of ship - it can be anything from an escape pod to a huge IkThorne mothership, but you are always the pilot of something. In addition to the neutral ships, each race also has unique ships that only race members can purchase. You can find the SMR shiplist here:<br />
-	<a href="http://www.smrealms.de/ship_list.php target="_blank">http://www.smrealms.de/ship_list.php</a> <br />
-	Additional information relating to ships can be found in the <a href="http://wiki.smrealms.de/" target="_blank">SMR wiki</a><br />
+	<a href="' . URL . '/ship_list.php target="_blank">' . URL . '/ship_list.php</a> <br />
+	Additional information relating to ships can be found in the <a href="' . WIKI_URL . '" target="_blank">SMR wiki</a><br />
 	<br />
 	It is important to choose ships to match your budget and your needs, and the biggest or most expensive ships are not always the best ones for all purposes.<br />
 	<br />
@@ -676,7 +691,7 @@ function createGame($gameID) {
 	$db->query('REPLACE INTO alliance_thread_topic (game_id, alliance_id, thread_id, topic) VALUES (' . $db->escapeNumber($gameID) . ', ' . $db->escapeNumber(NHA_ID) . ', 23, \'Weapons\')');
 	$text = 'SMR has a wide variety of weapons with which to arm your ships, and information on weapon capabilities can be found here:<br />
 	<br />
-	<a href="http://www.smrealms.de/weapon_list.php">http://www.smrealms.de/weapon_list.php</a><br />
+	<a href="' . URL . '/weapon_list.php">' . URL . '/weapon_list.php</a><br />
 	<br />
 	There are a few things to consider when choosing weapons, and the weapon combination that works for one player may not be suited to the style or the needs of another.<br />
 	<br />

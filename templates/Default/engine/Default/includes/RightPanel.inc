@@ -2,7 +2,7 @@
 if(isset($GameID)) { ?>
 	<span id="attack_area"><?php if($UnderAttack) { ?><p class="attack_warning">You Are Under Attack!</p><script type="text/javascript">triggerAttackBlink('3B1111');</script><?php } ?></span><?php
 	$this->includeTemplate('includes/UnreadMessages.inc'); ?>
-	<span id="lvlName"><?php echo $ThisPlayer->getLevelName(); ?></span><br />
+	<a href="<?php echo URL; ?>/level_requirements.php" target="levelRequirements"><span id="lvlName"><?php echo $ThisPlayer->getLevelName(); ?></span></a><br />
 	<big><a href="<?php echo $PlayerNameLink; ?>"><?php echo $ThisPlayer->getDisplayName(); ?></a></big><br /><?php
 	if(isset($PlayerInvisible)) { ?>
 		<span class="smallFont smallCaps red">INVISIBLE</span><br /><?php
@@ -34,16 +34,18 @@ if(isset($GameID)) { ?>
 	</span>
 	Credits : <span id="creds"><?php echo number_format($ThisPlayer->getCredits()); ?></span><br />
 	Experience : <span id="exp"><?php echo number_format($ThisPlayer->getExperience()); ?></span><br />
-	Level : <a href="<?php echo URL; ?>/level_requirements.php" target="levelRequirements"><span id="lvl"><?php echo $ThisPlayer->getLevelID(); ?></span></a><br />
-	Next Level: <a href="http://wiki.smrealms.de/index.php?title=Game_Guide:_Experience_Levels" target="_blank"><img src="images/silk/help.png" width="16" height="16" alt="Wiki Link" title="Goto SMR Wiki: Experience Levels"/></a><br /><?php
+	<a href="<?php echo URL; ?>/level_requirements.php" target="levelRequirements">Level : <span id="lvl"><?php echo $ThisPlayer->getLevelID(); ?></span></a><br />
+	<a href="<?php echo URL; ?>/level_requirements.php" target="levelRequirements">Next Level: </a><a href="<?php echo WIKI_URL; ?>/index.php?title=Game_Guide:_Experience_Levels" target="_blank"><img src="images/silk/help.png" width="16" height="16" alt="Wiki Link" title="Goto SMR Wiki: Experience Levels"/></a><br /><?php
 	$NextLevelExperience = number_format($ThisPlayer->getNextLevelExperience());
 	$Experience = number_format($ThisPlayer->getExperience()); ?>
-	<span id="lvlBar">
-		<img src="images/bar_left.gif" width="5" height="10" title="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" alt="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" />
-		<img src="images/blue.gif" width="<?php echo $ThisPlayer->getNextLevelPercentAcquired(); ?>" height="10" title="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" alt="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" />
-		<img src="images/bar_border.gif" width="<?php echo $ThisPlayer->getNextLevelPercentRemaining(); ?>" height="10" title="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" alt="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" />
-		<img src="images/bar_right.gif" width="5" height="10" title="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" alt="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" /><br />
-	</span>
+	<a href="<?php echo URL; ?>/level_requirements.php" target="levelRequirements">
+		<span id="lvlBar">
+			<img src="images/bar_left.gif" width="5" height="10" title="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" alt="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" />
+			<img src="images/blue.gif" width="<?php echo $ThisPlayer->getNextLevelPercentAcquired(); ?>" height="10" title="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" alt="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" />
+			<img src="images/bar_border.gif" width="<?php echo $ThisPlayer->getNextLevelPercentRemaining(); ?>" height="10" title="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" alt="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" />
+			<img src="images/bar_right.gif" width="5" height="10" title="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" alt="<?php echo $Experience; ?>/<?php echo $NextLevelExperience; ?>" /><br />
+		</span>
+	</a>
 	Alignment : <span id="align"><?php echo get_colored_text($ThisPlayer->getAlignment(),number_format($ThisPlayer->getAlignment())); ?></span><br />
 	Alliance : <span id="alliance"><a href="<?php echo Globals::getAllianceHREF($ThisPlayer->getAllianceID()); ?>"><?php
 		echo $ThisPlayer->getAllianceName();
@@ -83,7 +85,7 @@ if(isset($GameID)) { ?>
 	}
 	if($ThisShip->hasActiveIllusion()) { ?>
 		<a href="<?php echo $HardwareLink; ?>">
-			<span class="npcColor"><?php echo $ThisShip->getIllusionShipName(); ?></span><br />
+			<span class="npcColour"><?php echo $ThisShip->getIllusionShipName(); ?></span><br />
 			IG Rating : <?php echo $ThisShip->getIllusionAttack(); ?>/<?php echo $ThisShip->getIllusionDefense(); ?>
 		</a><br />
 		<br /><?php
@@ -116,7 +118,7 @@ if(isset($GameID)) { ?>
 		}
 	} ?>
 	Empty : <?php echo $ThisShip->getEmptyHolds(); ?><br /><br />
-	<a href="<?php echo $WeaponReorderLink; ?>"><span class="bold">Weapons</span></a><br /><?php
+	<a href="<?php echo $WeaponReorderLink; ?>"><span class="bold">Weapons</span></a>&nbsp;<a href="<?php echo URL; ?>/weapon_list.php" target="_blank"><img src="images/silk/help.png" width="16" height="16" alt="Weapon List" title="Weapon List"/></a><br /><?php
 	if($ThisShip->hasWeapons()) { ?>
 		<div class="wep_drop1" id="hide-show" onclick="toggleWepD('<?php echo $ThisPlayer->getToggleWeaponHidingHREF(); ?>');">
 			<noscript><a href="<?php echo $ThisPlayer->getToggleWeaponHidingHREF(); ?>"></noscript>

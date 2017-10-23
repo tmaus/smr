@@ -3,30 +3,23 @@ require_once('Database.interface.inc');
 abstract class MySqlDatabase implements Database {
 	protected static $errorAlreadyTriggered=false;
 	protected static $dbConn;
-	protected static $currDbName;
 	protected $dbResult = null;
 	protected $dbRecord = null;
 	protected $debug = true;
 	
 	public function __construct($host, $user, $password, $databaseName) {
 		if(!self::$dbConn) {
-			if(!self::$dbConn = @mysql_connect($host, $user, $password)) {
-				$this->error('Connection failed.');
+			self::$dbConn = new mysqli($host, $user, $password, $databaseName);
+			if (self::$dbConn->connect_errno) {
+				$this->error('Connection failed: ' . self::$dbConn->connect_error);
 			}
 		}
-		
-		if(self::$currDbName != $databaseName) {
-			self::$currDbName = $databaseName;
-			if(!@mysql_select_db(self::$currDbName, self::$dbConn)) {
-				$this->error('Database selection failed.');
-			}
-		}
-//		mysql_query("SET NAMES 'utf8' COLLATE 'utf8_general_ci'", self::$dbConn);
 	}
 	
 	public function query($query) {
-		if(!$this->dbResult = @mysql_query($query, self::$dbConn)) {
+		if(!$this->dbResult = self::$dbConn->query($query)) {
 			$this->error('SQL query failed (' . $query . ')');
+			// the SQL error message will be reported by logException
 		}
 	}
 	
@@ -34,8 +27,9 @@ abstract class MySqlDatabase implements Database {
 		if(!$this->dbResult)
 			$this->error('No resource to get record from.');
 		
-		if($this->dbRecord = @mysql_fetch_assoc($this->dbResult))
+		if($this->dbRecord = $this->dbResult->fetch_assoc()) {
 			return true;
+		}
 		return false;
 	}
 	
@@ -61,8 +55,22 @@ abstract class MySqlDatabase implements Database {
 		return (float)$this->dbRecord[$name];
 	}
 	
-	public function getMicrotime($name) {
-		return '0.'.substr($this->dbRecord[$name],-6).'00 '.substr($this->dbRecord[$name],0,-6);
+	// WARNING: In the past, Microtime was stored in the database incorrectly.
+	// For backwards compatibility, set $pad_msec=true to try to guess at the
+	// intended value. This is not safe if the Microtime length is wrong for an
+	// unrelated reason!
+	public function getMicrotime($name, $pad_msec=false) {
+		$data = $this->dbRecord[$name];
+		$sec  = substr($data, 0, 10);
+		$msec = substr($data, 10);
+		if (strlen($msec) != 6) {
+			if ($pad_msec) {
+				$msec = str_pad($msec, 6, '0', STR_PAD_LEFT);
+			} else {
+				throw new Exception('Field is not an escaped microtime ('.$data.')');
+			}
+		}
+		return '0.'.$msec.'00 '.$sec;
 	}
 	
 	public function getObject($name,$compressed=false) {
@@ -77,29 +85,33 @@ abstract class MySqlDatabase implements Database {
 	}
 	
 	public function lockTable($table) {
-		if(!@mysql_query('LOCK TABLES ' . $table . ' WRITE', self::$dbConn)) {
+		if(!self::$dbConn->query('LOCK TABLES ' . $table . ' WRITE')) {
 			$this->error('Unable to lock table: '. $table);
 		}
 	}
 	
 	public function unlock() {
-		if(!@mysql_query('UNLOCK TABLES', self::$dbConn)) {
+		if(!self::$dbConn->query('UNLOCK TABLES')) {
 			$this->error('Unable to remove table locks.');
 		}
 	}
 	
 	public function getNumRows() {
-		return @mysql_num_rows($this->dbResult);
+		return $this->dbResult->num_rows;
 	}
 	
 	public function getChangedRows() {
-		return @mysql_affected_rows(self::$dbConn);
+		return self::$dbConn->affected_rows;
 	}
 	
 	public function getInsertID() {
-		return @mysql_insert_id(self::$dbConn);
+		return self::$dbConn->insert_id;
 	}
-	
+
+	public function getError() {
+		return self::$dbConn->error;
+	}
+
 	protected function error($err) {
 		throw new Exception($err);
 	}
@@ -148,9 +160,10 @@ abstract class MySqlDatabase implements Database {
 			}
 			return substr($escapedString,0,-1);
 		}
-		if($quotes)
-			return '\'' . mysql_real_escape_string($string,self::$dbConn) . '\'';
-		return mysql_real_escape_string($string,self::$dbConn);
+		if($quotes) {
+			return '\'' . self::$dbConn->real_escape_string($string) . '\'';
+		}
+		return self::$dbConn->real_escape_string($string);
 	}
 	
 	public function escapeBinary($binary) {
@@ -182,10 +195,7 @@ abstract class MySqlDatabase implements Database {
 	}
 	
 	public function escapeMicrotime($microtime,$quotes=false) {
-		if(strlen($microtime)==21)
-			return $this->escapeString(microtimeSec($microtime).microtimeMSec($microtime),$quotes);
-		else
-			throw new Exception('Not a microtime! ('.$microtime.')');
+		return $this->escapeString(microtimeSec($microtime).microtimeMSec($microtime),$quotes);
 	}
 	
 	public function escapeBoolean($bool,$quotes=true) {
@@ -217,7 +227,7 @@ abstract class MySqlDatabase implements Database {
 	
 	function free() {
 		unset($this->dbRecord);
-		mysql_free_result($this->dbResult);
+		$this->dbResult->free_result();
 	}
 	
 	function escape_string($string, $transfer_html=false) {
@@ -230,10 +240,11 @@ abstract class MySqlDatabase implements Database {
 			return substr($escapedString,0,-1);
 		}
 		
-		if ($transfer_html)
-			return '\'' . mysql_real_escape_string(htmlentities($string,ENT_COMPAT,'utf-8'),self::$dbConn) . '\'';
-		else
-			return '\'' . mysql_real_escape_string($string,self::$dbConn) . '\'';
+		if ($transfer_html) {
+			return '\'' . self::$dbConn->real_escape_string(htmlentities($string,ENT_COMPAT,'utf-8')) . '\'';
+		} else {
+			return '\'' . self::$dbConn->real_escape_string($string) . '\'';
+		}
 	}
 	
 	//below is for Classic compatibility

@@ -158,13 +158,16 @@ div.secNavBox div.move_warp {
 .fullheight {
 	height: 100%;
 }
+.left {
+	text-align: left;
+}
 .right {
 	text-align: right;
 }
 .center {
 	text-align: center;
 }
-table.center {
+table.center, table.centered {
 	margin:auto;
 }
 .nopad {
@@ -216,10 +219,10 @@ table.center {
 .blue {
 	color:#00F;
 }
-.npcColor {
+.npcColour {
 	color: #6CF;
 }
-.sectorColor {
+.sectorColour {
 }
 .creds {
 	color: #FF0;
@@ -303,90 +306,116 @@ a.buttonA  {
 
 /* LM */
 table.lmt {
-	border-collapse: collapse;
-	border-spacing: 1px;
+	border-collapse: separate;
+	border-spacing: 6px;
 }
-/*Local up link Icon*/
-div.lm_sector div.lmup {
+table.lmt td {
+	padding: 0px;
+}
+/* Connecting icons */
+div.lmUp.con, div.lmDown.con {
+	background: url('../images/link_hor.gif') no-repeat center;
+}
+div.lmLeft.con, div.lmRight.con {
+	background: url('../images/link_ver.gif') no-repeat center;
+}
+
+/* Walls */
+div.wall {
+	background: black;
+}
+/* Local map wall/connector containers */
+a.lmUp, a.lmLeft, a.lmRight, a.lmDown {
+	background: none;
+	z-index: 2;
+}
+a.lmUp:hover div, a.lmLeft:hover div, a.lmRight:hover div, a.lmDown:hover div {
+	background: blue;
+}
+.lmUp, .lmDown {
+	position: absolute;
+	left: 0px;
+	width: 120px;
+	height: 5px;
+	/* This is required for IE6, otherwise it renders as higher than 5px */
+	font-size: 0px;
+}
+.lmUp {
+	top: 0px;
+}
+.lmDown {
+	bottom: 0px;
+}
+.lmRight, .lmLeft {
 	position: absolute;
 	top: 0px;
+	height: 120px;
+	width: 5px;
+}
+.lmRight {
+	right: 0px;
+}
+.lmLeft {
 	left: 0px;
-	height: 10px;
-	width: 120px;
 }
 /*Local Plot/Warp Area*/
-div.lm_sector div.lmp {
+.lm_sector div.lmp {
 	position: absolute;
 	top: 10px;
-	left: 0px;
+	left: 10px;
 	height: 18px;
 	z-index: 2;
 }
 /*Local trader and forces*/
-div.lm_sector div.lmtf {
+.lm_sector div.lmtf {
 	position: absolute;
 	top: 10px;
-	right: 0px;
+	right: 10px;
 	height: 18px;
 	text-align:right;
 	z-index: 2;
 }
 /*Local locations*/
-div.lm_sector div.lmloc {
+.lm_sector div.lmloc {
+	text-align: center;
 	position: absolute;
 	top: 28px;
 	left: 0px;
+	width: 120px;
 	height: 18px;
 	z-index: 2;
 }
-/*Local left link Icon*/
-div.lm_sector div.lmleft {
-	position: absolute;
-	top: 46px;
-	left: 0px;
-	height: 20px;
-	width: 20px;
-}
 /*Local sector number*/
-div.lm_sector div.lmsector {
+.lm_sector div.lmsector {
 	position: absolute;
 	top: 46px;
-	left: 20px;
+	left: 10px;
+	width: 100px;
 	height: 20px;
 	text-align: center;
-	width: 80px;
-}
-/*Local right link Icon*/
-div.lm_sector div.lmright {
-	position: absolute;
-	top: 46px;
-	left: 100px;
-	height: 20px;
-	text-align: right;
-	width: 20px;
 }
 /*Local port section*/
-div.lm_sector div.lmport {
+.lm_sector div.lmport {
 	position: absolute;
-	top: 66px;
-	left: 0px;
-	height: 44px;
+	top: 70px;
+	height: 40px;
 	z-index: 2;
-	/*width: 120px;*/
 }
-/*Local down link Icon*/
-div.lmdown {
-	position: absolute;
-	top: 110px;
+.lm_sector div.lmport.a {
 	left: 0px;
-	height: 10px;
 }
-div.lm_sector {
+.lm_sector div.lmport.b {
+	left: 5px;
+}
+.lm_sector {
 	position: relative;
 	width: 120px;
 	height: 120px;
+	min-width: 120px;
+	min-height: 120px;
 }
-div.lm_sector img.move_hack {
+.lm_sector .move_hack {
+	background: none;
 	height: 120px;
 	width: 120px;
 	position: absolute;
@@ -394,10 +423,6 @@ div.lm_sector img.move_hack {
 	left: 0px;
 	z-index: 1;
 }
-
-
-
-
 
 /** Chess **/
 .chessFont {
@@ -473,4 +498,83 @@ table#moveTable td {
 	display: inline;
 	border: 2px solid #008000;
 	position: absolute; 
+}
+
+/* List.js*/
+.sort {
+	cursor: pointer;
+}
+
+/* race colors */
+.race1 {
+	color: #FFD800;
+}
+
+.race2 {
+	color: #FF00FF;
+}
+
+.race3 {
+	color: #FF8000;
+}
+
+.race4 {
+	color: #0000FF;
+}
+
+.race5 {
+	color: #BFBFFF;
+}
+
+.race6 {
+	color: #00AA00;
+}
+
+.race7 {
+	color: #800000;
+}
+
+.race8 {
+	color: #804040;
+}
+
+.race9 {
+	color: #FF8080;
+}
+
+/* port race backgrounds */
+.port1 {
+	background-color: #FFD800;
+}
+
+.port2 {
+	background-color: #FF00FF;
+}
+
+.port3 {
+	background-color: #FF8000;
+}
+
+.port4 {
+	background-color: #0000FF;
+}
+
+.port5 {
+	background-color: #BFBFFF;
+}
+
+.port6 {
+	background-color: #00AA00;
+}
+
+.port7 {
+	background-color: #800000;
+}
+
+.port8 {
+	background-color: #804040; 
+}
+
+.port9 {
+	background-color: #FF8080;
 }

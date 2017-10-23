@@ -3,14 +3,17 @@ class SmrPort {
 	protected static $CACHE_PORTS = array();
 	protected static $CACHE_CACHED_PORTS = array();
 	
-	const NUMBER_OF_PORT_WEAPONS = 10;
+	const NUMBER_OF_PORT_WEAPONS = 6;
 	const DAMAGE_NEEDED_FOR_DOWNGRADE_CHANCE = 325;
 	const CHANCE_TO_DOWNGRADE = 1;
 	const TIME_FEDS_STAY = 1800;
 	const MAX_FEDS_BONUS = 4000;
-	const BASE_DEFENCES = 1000;
-	const DEFENCES_PER_LEVEL = 1000;
-	const DEFENCES_PER_TEN_MIL_CREDITS = 500;
+	const BASE_CDS = 1000;
+	const CDS_PER_LEVEL = 70;
+	const CDS_PER_TEN_MIL_CREDITS = 25;
+	const BASE_DEFENCES = 500;
+	const DEFENCES_PER_LEVEL = 700;
+	const DEFENCES_PER_TEN_MIL_CREDITS = 250;
 	const BARGAIN_LENIENCY_PERCENT = 0.01;
 	const MAX_LEVEL = 9;
 	private static $BASE_REFRESH_PER_HOUR = array(
@@ -157,18 +160,23 @@ class SmrPort {
 	public function checkDefenses() {
 		if(!$this->isUnderAttack()) {
 			$defences = self::BASE_DEFENCES + $this->getLevel() * self::DEFENCES_PER_LEVEL;
+			$cds = self::BASE_CDS + $this->getLevel() * self::CDS_PER_LEVEL;
 			// Upgrade modifier
 			$defences += max(0, round(self::DEFENCES_PER_LEVEL * $this->getUpgrade() / $this->getUpgradeRequirement()));
+			$cds += max(0, round(self::CDS_PER_LEVEL * $this->getUpgrade() / $this->getUpgradeRequirement()));
 			// Credits modifier
 			$defences += max(0, round(self::DEFENCES_PER_TEN_MIL_CREDITS * $this->getCredits() / 10000000));
+			$cds += max(0, round(self::CDS_PER_TEN_MIL_CREDITS * $this->getCredits() / 10000000));
 			// Defences restock (check for fed arrival)
 			if(TIME < $this->getReinforceTime() + self::TIME_FEDS_STAY) {
 				$federalMod = (self::TIME_FEDS_STAY - (TIME - $this->getReinforceTime())) / self::TIME_FEDS_STAY;
-				$defences += max(0, round($federalMod * self::MAX_FEDS_BONUS));
+				$federalMod = max(0, round($federalMod * self::MAX_FEDS_BONUS));
+				$defences += $federalMod;
+				$cds += round($federalMod / 10);
 			}
 			$this->setShields($defences);
 			$this->setArmour($defences);
-			$this->setCDs($defences/10);
+			$this->setCDs($cds);
 			if($this->getCredits() == 0) {
 				$this->setCreditsToDefault();
 			}
@@ -216,29 +224,30 @@ class SmrPort {
 		}
 		return $this->goods;
 	}
-	public function &getVisibleGoods(AbstractSmrPlayer &$player) {
+	public function &getVisibleGoods(AbstractSmrPlayer &$player=null) {
 		$goods = $this->getGoods();
-		$visibleGoods = array();
-		$visibleGoods['All Goods'] = array();
-		$visibleGoods['Sell'] = array();
-		$visibleGoods['Buy'] = array();
+		$visibleGoods = array(
+			'All Goods' => array(),
+			'Sell' => array(),
+			'Buy' => array()
+		);
 		foreach($goods['All Goods'] as $key => &$good) {
-			if($player->meetsAlignmentRestriction($good['AlignRestriction'])) {
+			if($player == null || $player->meetsAlignmentRestriction($good['AlignRestriction'])) {
 				$visibleGoods['All Goods'][$key] =& $good;
 				$visibleGoods[$good['TransactionType']][$key] =& $good;
 			}
 		}
 		return $visibleGoods;
 	}
-	public function &getVisibleGoodsAll(&$player) {
+	public function &getVisibleGoodsAll(&$player=null) {
 		$goods = $this->getVisibleGoods($player);
 		return $goods['All Goods'];
 	}
-	public function &getVisibleGoodsSold(&$player) {
+	public function &getVisibleGoodsSold(&$player=null) {
 		$goods = $this->getVisibleGoods($player);
 		return $goods['Sell'];
 	}
-	public function &getVisibleGoodsBought(AbstractSmrPlayer &$player) {
+	public function &getVisibleGoodsBought(AbstractSmrPlayer &$player=null) {
 		$goods = $this->getVisibleGoods($player);
 		return $goods['Buy'];
 	}
@@ -588,17 +597,22 @@ class SmrPort {
 			$this->updateAttackStarted();
 			//add news
 			$newsMessage = '<span class="red bold">*MAYDAY* *MAYDAY*</span> The federal government has received a distress call from the port in sector ' . Globals::getSectorBBLink($this->getSectorID()) . '. It is under attack by ';
-			if($trigger->hasAlliance())
+			if($trigger->hasAlliance()) {
 				$newsMessage .= 'members of <span class="yellow">'.$trigger->getAllianceBBLink().'</span>';
-			else
+			}
+			else {
 				$newsMessage .= $trigger->getBBLink();
+			}
 			
 			$newsMessage .= '. The Federal Government is offering ';
-			
-			if($trigger->hasAlliance())
-				$newsMessage .= 'various bounties for the deaths of any raiding members of <span class="yellow">'.$trigger->getAllianceBBLink().'</span>';
-			else
-				$newsMessage .= 'a bounty of ' . number_format(round($trigger->getLevelID() * DEFEND_PORT_BOUNTY_PER_LEVEL)) . ' credits for the death of '.$trigger->getBBLink();
+			$bounty = number_format(round($trigger->getLevelID() * DEFEND_PORT_BOUNTY_PER_LEVEL));
+
+			if($trigger->hasAlliance()) {
+				$newsMessage .= 'bounties of ' . $bounty . ' for the deaths of any raiding members of <span class="yellow">'.$trigger->getAllianceBBLink().'</span>';
+			}
+			else {
+				$newsMessage .= 'a bounty of ' . $bounty . ' credits for the death of '.$trigger->getBBLink();
+			}
 			$newsMessage .= ' prior to the destruction of the port, or until federal forces arrive to defend the port.';
 //			$irc_message = '[k00,01]The port in sector [k11]'.$this->sectorID.'[k00] is under attack![/k]';
 			$this->db->query('INSERT INTO news (game_id, time, news_message, type,killer_id,killer_alliance,dead_id) VALUES (' . $this->db->escapeNumber($this->getGameID()) . ',' . $this->db->escapeNumber(TIME) . ',' . $this->db->escapeString($newsMessage) . ',\'REGULAR\',' . $this->db->escapeNumber($trigger->getAccountID()) . ',' . $this->db->escapeNumber($trigger->getAllianceID()) . ',' . $this->db->escapeNumber(ACCOUNT_ID_PORT) . ')');
@@ -643,7 +657,7 @@ class SmrPort {
 	}
 
 	public function setCreditsToDefault() {
-		$this->setCredits(1250000 + $this->getLevel()*1250000 + pow($this->getLevel(), 2) * 275000);
+		$this->setCredits(3000000 + $this->getLevel()*1500000 + pow($this->getLevel(), 2) * 300000);
 	}
 
 	public function setCredits($credits) {
@@ -1135,6 +1149,7 @@ class SmrPort {
 		$results = array('Port' => &$this, 'TotalDamage' => 0, $results['TotalDamagePerTargetPlayer'] = array());
 		foreach($targetPlayers as &$targetPlayer) {
 			$results['TotalDamagePerTargetPlayer'][$targetPlayer->getAccountID()] = 0;
+			$results['TotalShotsPerTargetPlayer'][$targetPlayer->getAccountID()] = 0;
 		} unset($targetPlayer);
 		if($this->isDestroyed()) {
 			$results['DeadBeforeShot'] = true;
@@ -1143,10 +1158,14 @@ class SmrPort {
 		$results['DeadBeforeShot'] = false;
 		$weapons =& $this->getWeapons();
 		foreach($weapons as $orderID => &$weapon) {
-			$results['Weapons'][$orderID] =& $weapon->shootPlayerAsPort($this, $targetPlayers[array_rand($targetPlayers)]);
+			do {
+				$targetPlayer =& $targetPlayers[array_rand($targetPlayers)];
+			} while($results['TotalShotsPerTargetPlayer'][$targetPlayer->getAccountID()] > min($results['TotalShotsPerTargetPlayer']));
+			$results['Weapons'][$orderID] =& $weapon->shootPlayerAsPort($this, $targetPlayer);
+			$results['TotalShotsPerTargetPlayer'][$targetPlayer->getAccountID()]++;
 			if($results['Weapons'][$orderID]['Hit']) {
 				$results['TotalDamage'] += $results['Weapons'][$orderID]['ActualDamage']['TotalDamage'];
-				$results['TotalDamagePerTargetPlayer'][$results['Weapons'][$orderID]['TargetPlayer']->getAccountID()] += $results['Weapons'][$orderID]['ActualDamage']['TotalDamage'];
+				$results['TotalDamagePerTargetPlayer'][$targetPlayer->getAccountID()] += $results['Weapons'][$orderID]['ActualDamage']['TotalDamage'];
 			}
 		}
 		if($this->hasCDs()) {
@@ -1246,8 +1265,8 @@ class SmrPort {
 	}
 
 	public function razePort(AbstractSmrPlayer &$killer) {
-		$credits = $this->getCredits();
-		if($this->payout($killer, $this->getCredits() * self::RAZE_MONEY_PERCENT / 100, 'Razed')) {
+		$credits = $this->getCredits() * self::RAZE_MONEY_PERCENT / 100;
+		if($this->payout($killer, $credits, 'Razed')) {
 			$this->doDowngrade();
 		}
 		return $credits;

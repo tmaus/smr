@@ -22,7 +22,7 @@ class SmrPlayer extends AbstractSmrPlayer {
 	protected $lastNewsUpdate;
 	protected $stunned;
 	protected $fleed;
-	protected $attackColor;
+	protected $attackColour;
 	protected $kicked;
 //	protected $pastKnowledge;
 	protected $governmentHelp;
@@ -97,7 +97,7 @@ class SmrPlayer extends AbstractSmrPlayer {
 				$accountID = $db->getInt('account_id');
 				$players[$accountID] =& self::getPlayer($accountID,$gameID,$forceUpdate);
 			}
-			return self::$CACHE_SECTOR_PLAYERS[$gameID][$sectorID] =& $players;
+			self::$CACHE_SECTOR_PLAYERS[$gameID][$sectorID] =& $players;
 		}
 		return self::$CACHE_SECTOR_PLAYERS[$gameID][$sectorID];
 	}
@@ -111,7 +111,7 @@ class SmrPlayer extends AbstractSmrPlayer {
 				$accountID = $db->getField('account_id');
 				$players[$accountID] =& self::getPlayer($accountID,$gameID,$forceUpdate);
 			}
-			return self::$CACHE_PLANET_PLAYERS[$gameID][$sectorID] =& $players;
+			self::$CACHE_PLANET_PLAYERS[$gameID][$sectorID] =& $players;
 		}
 		return self::$CACHE_PLANET_PLAYERS[$gameID][$sectorID];
 	}
@@ -125,7 +125,7 @@ class SmrPlayer extends AbstractSmrPlayer {
 				$accountID = $db->getInt('account_id');
 				$players[$accountID] =& self::getPlayer($accountID,$gameID);
 			}
-			return self::$CACHE_ALLIANCE_PLAYERS[$gameID][$allianceID] =& $players;
+			self::$CACHE_ALLIANCE_PLAYERS[$gameID][$allianceID] =& $players;
 		}
 		return self::$CACHE_ALLIANCE_PLAYERS[$gameID][$allianceID];
 	}
@@ -133,7 +133,8 @@ class SmrPlayer extends AbstractSmrPlayer {
 	public static function &getPlayer($accountIDOrResultArray,$gameID,$forceUpdate = false) {
 		if($forceUpdate || is_array($accountIDOrResultArray) || !isset(self::$CACHE_PLAYERS[$gameID][$accountIDOrResultArray])) {
 			$p = new SmrPlayer($gameID,$accountIDOrResultArray);
-			return self::$CACHE_PLAYERS[$gameID][$p->getAccountID()] =& $p;
+			self::$CACHE_PLAYERS[$gameID][$p->getAccountID()] =& $p;
+			return self::$CACHE_PLAYERS[$gameID][$p->getAccountID()];
 		}
 		return self::$CACHE_PLAYERS[$gameID][$accountIDOrResultArray];
 	}
@@ -172,7 +173,7 @@ class SmrPlayer extends AbstractSmrPlayer {
 			$this->lastNewsUpdate				= (int) $result['last_news_update'];
 			$this->stunned						= (int) $result['stunned'];
 			$this->fleed						= $result['fleed']=='TRUE';
-			$this->attackColor					= (string) $result['attack_warning'];
+			$this->attackColour					= (string) $result['attack_warning'];
 			$this->dead							= $result['dead']=='TRUE';
 			$this->startDead					= $this->dead;
 			$this->landedOnPlanet				= $result['land_on_planet']=='TRUE';
@@ -288,7 +289,7 @@ class SmrPlayer extends AbstractSmrPlayer {
 				return $this->stunned;
 			case 'Fleed':
 				return $this->fleed;
-			case 'Attack Color':
+			case 'Attack Colour':
 				return $this->attackWarning;
 //			case 'Chat':
 //				return $this->chat;
@@ -302,7 +303,7 @@ class SmrPlayer extends AbstractSmrPlayer {
 				return $this->getLevelID();
 			case 'Display Name':
 				return $this->getDisplayName();
-			case 'Span Color':
+			case 'Span Colour':
 				return $this->getSpanColour();
 //			case 'Ship Size':
 //				return $this->getShipSize();
@@ -465,16 +466,16 @@ class SmrPlayer extends AbstractSmrPlayer {
 		$this->hasChanged=true;
 	}
 
-	function getAttackColor() {
-		return $this->attackColor;
+	function getAttackColour() {
+		return $this->attackColour;
 	}
 
-	function setAttackColor($colour) {
-		if($this->attackColor == $colour)
+	function setAttackColour($colour) {
+		if($this->attackColour == $colour)
 			return;
-		$this->attackColor=$colour;
+		$this->attackColour=$colour;
 		$this->hasChanged=true;
-//		$this->db->query('UPDATE player SET attack_warning = ' . $this->db->escapeString($this->attackColor) . ' WHERE ' . $this->SQL . ' LIMIT 1');
+//		$this->db->query('UPDATE player SET attack_warning = ' . $this->db->escapeString($this->attackColour) . ' WHERE ' . $this->SQL . ' LIMIT 1');
 	}
 
 	function getBank() {
@@ -1162,20 +1163,18 @@ class SmrPlayer extends AbstractSmrPlayer {
 
 		//check for federal bounty being offered for current port raiders;
 		$this->db->query('DELETE FROM player_attacks_port WHERE time < ' . $this->db->escapeNumber(TIME - self::TIME_FOR_FEDERAL_BOUNTY_ON_PR));
-		$query = 'SELECT count(*) as numAttacks
+		$query = 'SELECT 1
 					FROM player_attacks_port
-					JOIN player USING(game_id, account_id, sector_id)
 					JOIN port USING(game_id, sector_id)
+					JOIN player USING(game_id, account_id)
 					WHERE armour > 0
 						AND account_id = ' . $this->db->escapeNumber($this->getAccountID()) . '
-						AND game_id = ' . $this->db->escapeNumber($this->getGameID());
+						AND game_id = ' . $this->db->escapeNumber($this->getGameID()) . '
+					LIMIT 1';
 		$this->db->query($query);
 		if ($this->db->nextRecord()) {
-			if ($this->db->getField('numAttacks')) {
-				$numAttacks = $this->db->getField('numAttacks');
-				$multiplier = round(DEFEND_PORT_BOUNTY_PER_LEVEL * $this->getLevelID());
-				$this->increaseCurrentBountyAmount('HQ',$numAttacks * $multiplier);
-			}
+			$bounty = round(DEFEND_PORT_BOUNTY_PER_LEVEL * $this->getLevelID());
+			$this->increaseCurrentBountyAmount('HQ', $bounty);
 		}
 
 		// Killer get marked as claimer of podded player's bounties even if they don't exist
@@ -1213,10 +1212,10 @@ class SmrPlayer extends AbstractSmrPlayer {
 			$killer->increaseHOF($this->getShip()->getCost(),array('Killing','NPC','Money','Cost Of Ships Killed'), HOF_PUBLIC);
 
 			if($return['KillerAlign'] > 0) {
-				$killer->increaseHOF($alignChange,array('Killing','NPC','Alignment','Gain'), HOF_PUBLIC);
+				$killer->increaseHOF($return['KillerAlign'],array('Killing','NPC','Alignment','Gain'), HOF_PUBLIC);
 			}
 			else {
-				$killer->increaseHOF(-$alignChange,array('Killing','NPC','Alignment','Loss'), HOF_PUBLIC);
+				$killer->increaseHOF(-$return['KillerAlign'],array('Killing','NPC','Alignment','Loss'), HOF_PUBLIC);
 			}
 
 			$killer->increaseHOF($return['BountyGained']['Amount'],array('Killing','NPC','Money','Bounty Gained'), HOF_PUBLIC);
@@ -1234,10 +1233,10 @@ class SmrPlayer extends AbstractSmrPlayer {
 			$killer->increaseHOF($this->getShip()->getCost(),array('Killing','Money','Cost Of Ships Killed'), HOF_PUBLIC);
 
 			if($return['KillerAlign'] > 0) {
-				$killer->increaseHOF($alignChange,array('Killing','Alignment','Gain'), HOF_PUBLIC);
+				$killer->increaseHOF($return['KillerAlign'],array('Killing','Alignment','Gain'), HOF_PUBLIC);
 			}
 			else {
-				$killer->increaseHOF(-$alignChange,array('Killing','Alignment','Loss'), HOF_PUBLIC);
+				$killer->increaseHOF(-$return['KillerAlign'],array('Killing','Alignment','Loss'), HOF_PUBLIC);
 			}
 
 			$killer->increaseHOF($return['BountyGained']['Amount'],array('Killing','Money','Bounty Gained'), HOF_PUBLIC);
@@ -1282,14 +1281,14 @@ class SmrPlayer extends AbstractSmrPlayer {
 		$owner =& $forces->getOwner();
 		// send a message to the person who died
 		$this->sendMessage($owner->getAccountID(), MSG_PLAYER, 'Your forces <span class="red">DESTROYED </span>'.$this->getBBLink().' in sector '.$forces->getSectorID(),false);
-		$owner->sendMessage($this->getAccountID(), MSG_PLAYER, 'You were <span class="red">DESTROYED</span> by forces in sector '.$forces->getSectorID(),false);
+		$owner->sendMessage($this->getAccountID(), MSG_PLAYER, 'You were <span class="red">DESTROYED</span> by '.$owner->getBBLink().'\'s forces in sector '.$forces->getSectorID(),false);
 
 		$news_message = $this->getBBLink();
 		if ($this->hasCustomShipName()) {
 			$named_ship = strip_tags($this->getCustomShipName(), '<font><span><img>');
 			$news_message .= ' flying <span class="yellow">'.$named_ship.'</span>';
 		}
-		$news_message .= ' was destroyed by forces in sector ' . Globals::getSectorBBLink($forces->getSectorID());
+		$news_message .= ' was destroyed by ' . $owner->getBBLink() . '\'s forces in sector ' . Globals::getSectorBBLink($forces->getSectorID());
 		// insert the news entry
 		$this->db->query('INSERT INTO news (game_id, time, news_message,killer_id,killer_alliance,dead_id,dead_alliance)
 						VALUES(' . $this->db->escapeNumber($this->getGameID()) . ', ' . $this->db->escapeNumber(TIME) . ', ' . $this->db->escapeString($news_message) . ',' . $this->db->escapeNumber($owner->getAccountID()) . ',' . $this->db->escapeNumber($owner->getAllianceID()) . ',' . $this->db->escapeNumber($this->getAccountID()) . ',' . $this->db->escapeNumber($this->getAllianceID()) . ')');
@@ -1297,6 +1296,8 @@ class SmrPlayer extends AbstractSmrPlayer {
 		$expLossPercentage = .30;
 		$return['DeadExp'] = floor($this->getExperience() * $expLossPercentage);
 		$this->decreaseExperience($return['DeadExp']);
+
+		$return['LostCredits'] = $this->getCredits();
 
 		$this->db->query('SELECT * FROM alliance_vs_alliance
 						WHERE alliance_id_1 = -1 AND alliance_id_2 = ' . $this->db->escapeNumber($this->getAllianceID()) . ' AND game_id = ' . $this->db->escapeNumber($this->getGameID()));
@@ -1334,6 +1335,8 @@ class SmrPlayer extends AbstractSmrPlayer {
 		$return['DeadExp'] = floor($this->getExperience() * $expLossPercentage);
 		$this->decreaseExperience($return['DeadExp']);
 
+		$return['LostCredits'] = $this->getCredits();
+
 		$this->killPlayer($port->getSectorID());
 		return $return;
 	}
@@ -1342,7 +1345,7 @@ class SmrPlayer extends AbstractSmrPlayer {
 		$return = array();
 		// send a message to the person who died
 		$planetOwner =& $planet->getOwner();
-		$this->sendMessage($planetOwner->getAccountID(), MSG_PLAYER, 'Your planet <span class="red">DESTROYED</span> '.$this->getBBLink().' in sector '.$planet->getSectorID(),false);
+		$this->sendMessage($planetOwner->getAccountID(), MSG_PLAYER, 'Your planet <span class="red">DESTROYED</span>&nbsp;'.$this->getBBLink().' in sector '.$planet->getSectorID(),false);
 		$planetOwner->sendMessage($this->getAccountID(), MSG_PLAYER, 'You were <span class="red">DESTROYED</span> by '.$planet->getDisplayName().'\'s defenses.',false);
 
 		$news_message = $this->getBBLink();
@@ -1358,6 +1361,8 @@ class SmrPlayer extends AbstractSmrPlayer {
 		$expLossPercentage = .27 - $planet->getLevel()/1000;
 		$return['DeadExp'] = floor($this->getExperience() * $expLossPercentage);
 		$this->decreaseExperience($return['DeadExp']);
+
+		$return['LostCredits'] = $this->getCredits();
 
 		$this->killPlayer($planet->getSectorID());
 		return $return;
@@ -1385,7 +1390,7 @@ class SmrPlayer extends AbstractSmrPlayer {
 				', last_news_update='.$this->db->escapeNumber($this->lastNewsUpdate).
 				', stunned='.$this->db->escapeString($this->stunned).
 				', fleed='.$this->db->escapeBoolean($this->fleed).
-				', attack_warning='.$this->db->escapeString($this->attackColor).
+				', attack_warning='.$this->db->escapeString($this->attackColour).
 				', dead='.$this->db->escapeBoolean($this->dead).
 				', land_on_planet='.$this->db->escapeBoolean($this->landedOnPlanet).
 				', kicked='.$this->db->escapeBoolean($this->kicked).

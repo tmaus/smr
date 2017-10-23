@@ -2,6 +2,11 @@
 @date_default_timezone_set(@date_default_timezone_get());
 require_once(dirname(__FILE__) . '/config.specific.php');
 
+if (ENABLE_DEBUG) {
+	// Warn about everything when in debug mode
+	error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
+}
+
 define('ACCOUNT_ID_PORT',65535);
 define('ACCOUNT_ID_ADMIN',65534);
 define('ACCOUNT_ID_PLANET',65533);
@@ -24,6 +29,8 @@ define('MAX_IMAGE_HEIGHT',30);
 
 define('IRC_BOT_SOCKET', '/tmp/ircbot.sock');
 define('MULTI_CHECKING_COOKIE_VERSION','v3');
+
+define('WIKI_URL', 'http://wiki.smrealms.de');
 
 /*
  * Localisations
@@ -110,7 +117,7 @@ define('SHIP_TYPE_FURY',75);
  * Combat system
  */
 define('MAX_ATTACK_RATING_NEWBIE',4);
-define('MAXIMUM_PVP_FLEET_SIZE', 3);
+define('MAXIMUM_PVP_FLEET_SIZE', 10);
 define('MAXIMUM_PORT_FLEET_SIZE', 10);
 define('MAXIMUM_PLANET_FLEET_SIZE', 10);
 define('MAXIMUM_FORCES_FLEET_SIZE', 1);
@@ -130,8 +137,10 @@ define('DEFEND_PORT_BOUNTY_PER_LEVEL',1000000);
 define('PLANET_GENERATOR',1);
 define('PLANET_HANGAR',2);
 define('PLANET_TURRET',3);
+define('PLANET_BUNKER',4);
 define('PLANET_GENERATOR_SHIELDS',100);
 define('PLANET_HANGAR_DRONES',20);
+define('PLANET_BUNKER_ARMOUR',100);
 
 define('ALIGN_FED_PROTECTION', 0);
 
@@ -210,6 +219,7 @@ define('MISJUMP_DISTANCE_DIFF_FACTOR', 1.2);
 define('TURNS_JUMP_MINIMUM', 10);
 
 define('TURNS_TO_CLOAK',1);
+define('TURNS_TO_SHOOT_PORT',2);
 
 define('GOOD_NOTHING',0);
 /*
@@ -254,6 +264,7 @@ define('HARDWARE_DCS',11);
  */
 define('GENERATOR',1);
 define('HANGAR',1);
+define('BUNKER',1);
 define('TURRET',1);
 
 define('BOND_TIME',172800);

@@ -14,7 +14,7 @@ function check_for_registration(&$account, &$player, $fp, $nick, $channel, $call
 
 		// execute a whois and continue here on whois
 		fputs($fp, 'WHOIS ' . $nick . EOL);
-		array_push($actions, array('MSG_318', $channel, $nick, $callback, time()));
+		array_push($actions, array('MSG_318', $channel, $nick, $callback, time(), $validationMessages));
 
 		return true;
 	}
@@ -45,8 +45,10 @@ function check_for_registration(&$account, &$player, $fp, $nick, $channel, $call
 	}
 
 	// get smr player
-	$player = SmrPlayer::getPlayer($account->getAccountID(), $alliance->getGameId(), true);
-	if ($player == null) {
+	try {
+		$player = SmrPlayer::getPlayer($account->getAccountID(), $alliance->getGameId(), true);
+	}
+	catch(Exception $e) {
 		if($validationMessages === true) {
 			fputs($fp, 'PRIVMSG ' . $channel . ' :' . $nick . ', you have not joined the game that this channel belongs to.' . EOL);
 		}
@@ -103,11 +105,7 @@ function channel_msg_with_registration($fp, $rdata)
 			return true;
 		if (channel_msg_op_turns($fp, $rdata, $account, $player))
 			return true;
-		if (channel_msg_op_yes($fp, $rdata, $account, $player))
-			return true;
-		if (channel_msg_op_no($fp, $rdata, $account, $player))
-			return true;
-		if (channel_msg_op_maybe($fp, $rdata, $account, $player))
+		if (channel_msg_op_response($fp, $rdata, $account, $player))
 			return true;
 		if (channel_msg_op_list($fp, $rdata, $account, $player))
 			return true;

@@ -27,9 +27,7 @@ function create_alliance_menu($alliance_id = null, $alliance_leader_id = FALSE) 
 		}
 	}
 
-	$db->query('SELECT role_id FROM player_has_alliance_role WHERE account_id = ' . $db->escapeNumber($player->getAccountID()) . ' AND game_id = ' . $db->escapeNumber($player->getGameID()) . ' AND alliance_id=' . $db->escapeNumber($player->getAllianceID()));
-	if ($db->nextRecord()) $role_id = $db->getInt('role_id');
-	else $role_id = 0;
+	$role_id = $player->getAllianceRole();
 	$db->query('SELECT send_alliance_msg FROM alliance_has_roles WHERE alliance_id = ' . $db->escapeNumber($player->getAllianceID()) . ' AND game_id = ' . $db->escapeNumber($player->getGameID()) . ' AND role_id = ' . $db->escapeNumber($role_id));
 	$db->nextRecord();
 	$send = $db->getBoolean('send_alliance_msg');
@@ -130,15 +128,29 @@ function create_trader_menu() {
 						array('Link'=>Globals::getTraderBountiesHREF(),'Text'=>'Bounties')));
 }
 
-function create_planet_menu() {
+function create_planet_menu($planet) {
 	global $template;
-	$template->assign('MenuItems', array(
-						array('Link'=>Globals::getPlanetMainHREF(),'Text'=>'Planet Main'),
-						array('Link'=>Globals::getPlanetConstructionHREF(),'Text'=>'Construction'),
-						array('Link'=>Globals::getPlanetDefensesHREF(),'Text'=>'Defenses'),
-						array('Link'=>Globals::getPlanetOwnershipHREF(),'Text'=>'Ownership'),
-						array('Link'=>Globals::getPlanetStockpileHREF(),'Text'=>'Stockpile'),
-						array('Link'=>Globals::getPlanetFinancesHREF(),'Text'=>'Financial')));
+	
+	$menu_array = array();
+	$menu_array[] = array('Link'=>Globals::getPlanetMainHREF(),'Text'=>'Planet Main');
+	$planetOptions = $planet->getOptions();
+	if ($planetOptions['CONSTRUCTION']) {
+		$menu_array[] = array('Link'=>Globals::getPlanetConstructionHREF(),'Text'=>'Construction');
+	}
+	if ($planetOptions['DEFENSE']) {
+		$menu_array[] = array('Link'=>Globals::getPlanetDefensesHREF(),'Text'=>'Defense');
+	}
+	if ($planetOptions['OWNERSHIP']) {
+		$menu_array[] = array('Link'=>Globals::getPlanetOwnershipHREF(),'Text'=>'Ownership');
+	}
+	if ($planetOptions['STOCKPILE']) {
+		$menu_array[] = array('Link'=>Globals::getPlanetStockpileHREF(),'Text'=>'Stockpile');
+	}
+	if ($planetOptions['FINANCE']) {
+		$menu_array[] = array('Link'=>Globals::getPlanetFinancesHREF(),'Text'=>'Financial');
+	}
+	
+	$template->assign('MenuItems', $menu_array);	
 }
 
 /*

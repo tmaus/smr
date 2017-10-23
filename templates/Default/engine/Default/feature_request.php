@@ -1,15 +1,15 @@
 <?php
 if(!$ShowCurrent) {
-	?><p><a href="<?php echo Globals::getFeatureRequestHREF(); ?>">View Current Feature Requests</a></p><?php
+	?><p><a href="<?php echo Globals::getFeatureRequestHREF(); ?>">View New Requests (<?php echo $CurrentTotal; ?>)</a></p><?php
 }
 if($Status != 'Opened' || $ShowCurrent) {
-	?><p><a href="<?php echo $ShowOldFeaturesHref; ?>">View Old Requests</a></p><?php
+	?><p><a href="<?php echo $ShowOldFeaturesHref; ?>">View All Open Requests (<?php echo $OldTotal; ?>)</a></p><?php
 }
 if($Status != 'Implemented') {
-	?><p><a href="<?php echo $ViewImplementedFeaturesHref; ?>">View Previously Implemented Features</a></p><?php
+	?><p><a href="<?php echo $ViewImplementedFeaturesHref; ?>">View Implemented Requests (<?php echo $PreviousImplementedTotal; ?>)</a></p><?php
 }
 if($Status != 'Rejected') {
-	?><p><a href="<?php echo $ShowRejectedFeaturesHref; ?>">View Rejected Requests</a></p><?php
+	?><p><a href="<?php echo $ShowRejectedFeaturesHref; ?>">View Rejected Requests (<?php echo $RejectedTotal; ?>)</a></p><?php
 }
 if(isset($FeatureRequests)) { ?>
 	<form name="FeatureRequestVoteForm" method="POST" action="<?php echo $FeatureRequestVoteFormHREF; ?>">
@@ -41,7 +41,7 @@ if(isset($FeatureRequests)) { ?>
 						?><td><?php echo $FeatureRequest['RequestAccount']->getLogin(); ?>&nbsp;(<?php echo $FeatureRequest['RequestAccount']->getAccountID(); ?>)</td><?php
 					} ?>
 					<td><?php echo $FeatureRequest['Votes']['FAVOURITE']; ?> / <?php echo $FeatureRequest['Votes']['YES'] + $FeatureRequest['Votes']['FAVOURITE']; ?> / <?php echo $FeatureRequest['Votes']['NO']; ?></td>
-					<td style="text-align:left;"><?php echo bbifyMessage($FeatureRequest['Message']); ?></td>
+					<td class="left"><?php echo bbifyMessage($FeatureRequest['Message']); ?></td>
 					<td class="shrink noWrap top"><a href="<?php echo $FeatureRequest['CommentsHREF']; ?>">View (<?php echo $FeatureRequest['Comments']; ?>)</a></td><?php
 					if($Status == 'Opened') { ?>
 						<td><input type="radio" name="favourite" value="<?php echo $FeatureRequest['RequestID']; ?>"<?php if($FeatureRequest['VotedFor'] == 'FAVOURITE') { ?> checked="checked"<?php } ?>></td>

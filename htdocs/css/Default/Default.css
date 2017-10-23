@@ -5,9 +5,6 @@ body {
 h1, h2 {
 	color: #80C870;
 }
-h3 {
-	color: #FF00FF;
-}
 #InputFields, .InputFields {
 	background: #06240E;
 	color: #FFFFFF;
@@ -168,6 +165,7 @@ a.enemyExamine:active {
 	border-color:#6E2A2A #CCA3A3 #CCA3A3 #6E2A2A;
 }
 
+
 ul.boxy {
 	font: 13px Arial, Sans-Serif;
 	border: 1px solid #0B8D35;
@@ -177,26 +175,24 @@ ul.boxy li {
 }
 
 /* LM */
-div.connectSeclm {
+.connectSeclm {
 	background-color: #33784B;
 }
-div.connectSeclm:hover {
+.connectSeclm:hover {
 	background-color: #14645F;
 }
-div.currentSeclm {
-	background-color:#33784B;
-}
-div.currentSeclm2 {
+.currentSeclm {
 	background: url('../../images/currentsector.png');
 	_background: none; /* Disable transparent image for IE6 as it can't handle it */
+	background-color: #33784B;
 }
-div.currentSeclm:hover {
+.currentSeclm:hover {
 	background-color:#337975;
 }
-div.normalSeclm {
+.normalSeclm {
 	background-color: #0B4C1C;
 }
-div.normalSeclmu {
+.normalSeclmu {
 	background-color: #000000;
 }
 
@@ -250,4 +246,27 @@ table.csForces th.header {
 }
 .inhab {
    color: #00FF00;
+}
+
+/* Friend vs Foe shades */
+
+.enemy, .enemy:hover  {
+	color: #FF0000;
+}
+.enemyBack, .enemyBack:hover {
+	background-color: #FF0000;
+}
+
+.friendly, .friendly:hover {
+	color: #00AA00;
+}
+.friendlyBack, .friendlyBack:hover {
+	background-color: #00AA00;
+}
+
+.neutral, .neutral:hover {
+	color: #FFD800;
+}
+.neutralBack, .neutralBack:hover {
+	background-color: #FFD800;
 }

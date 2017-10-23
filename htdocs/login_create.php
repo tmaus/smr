@@ -1,6 +1,5 @@
 <?php
 require_once('config.inc');
-require_once(LIB.'External/recaptcha/recaptchalib.php');
 ?>
 <!DOCTYPE html>
 
@@ -10,6 +9,7 @@ require_once(LIB.'External/recaptcha/recaptchalib.php');
 	<link rel="stylesheet" type="text/css" href="<?php echo DEFAULT_CSS_COLOUR; ?>">
 	<style>.recaptchatable #recaptcha_response_field {background:white; color: black;}</style>
 	<title>Space Merchant Realms</title>
+	<script src='//www.google.com/recaptcha/api.js'></script>
 </head>
 
 <body>
@@ -92,11 +92,7 @@ require_once(LIB.'External/recaptcha/recaptchalib.php');
 						<td width='73%'><input type='text' name='referral_id' size='10' maxlength='20' id='InputFields'<?php if(isset($_REQUEST['ref'])){ echo 'value="'.htmlspecialchars($_REQUEST['ref']).'"'; }?>></td>
 					</tr>
 					<tr>
-						<td colspan='2'><?php if (strlen(RECAPTCHA_PUBLIC) > 0) {
-                            echo recaptcha_get_html(RECAPTCHA_PUBLIC);
-                        } else {
-                            echo "<div style='color:red;'>reCAPTCHA disabled due to missing API key</div>";
-                        } ?></td>
+						<td colspan='2'><div class="g-recaptcha" data-sitekey="<?php echo RECAPTCHA_PUBLIC; ?>"></div></td>
 					</tr>
 					<tr>
 						<td colspan='2'>&nbsp;</td>
@@ -131,7 +127,7 @@ require_once(LIB.'External/recaptcha/recaptchalib.php');
 						<td width='27%'>Country:</td>
 						<td width='73%'>
 							<select name='country_code' id='InputFields'>
-								<option value="None" selected="selected">[Select your country]</option>
+								<option value="" selected="selected">[Select your country]</option>
 								<option value='US'>United States</option>
 								<option value='UK'>United Kingdom</option>
 								<option value='DE'>Germany</option>
@@ -373,19 +369,6 @@ require_once(LIB.'External/recaptcha/recaptchalib.php');
 								<option value='ZW'>Zimbabwe</option>
 							</select>
 						</td>
-					</tr>
-					<tr>
-						<td colspan='2'>&nbsp;</td>
-					</tr>
-					<tr>
-						<th colspan='2'>Various Information (Optional)</th>
-					</tr>
-					<tr>
-						<td colspan='2'>&nbsp;</td>
-					</tr>
-					<tr>
-						<td width='27%'>ICQ:</td>
-						<td width='73%'><input type='text' name='icq' size='20' maxlength='15' id='InputFields'></td>
 					</tr>
 					</table>
 

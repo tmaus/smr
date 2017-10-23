@@ -6,7 +6,7 @@ if ($player->hasFederalProtection())
 	create_error('You are under federal protection!');
 if($player->isLandedOnPlanet())
 	create_error('You cannot attack ports whilst on a planet!');
-if ($player->getTurns() < 3)
+if ($player->getTurns() < TURNS_TO_SHOOT_PORT)
 	create_error('You do not have enough turns to attack this port!');
 if(!$ship->hasWeapons() && !$ship->hasCDs())
 	create_error('What are you going to do? Insult it to death?');
@@ -41,7 +41,7 @@ $port->attackedBy($player,$attackers);
 
 // take the turns and decloak all attackers
 foreach($attackers as &$attacker) {
-	$attacker->takeTurns(3,0);
+	$attacker->takeTurns(TURNS_TO_SHOOT_PORT,0);
 	$attacker->getShip()->decloak();
 } unset($attacker);
 
@@ -88,7 +88,6 @@ forward($container);
 //		$topic = 'Port Siege Report Sector '.$player->getSectorID();
 //		$text = 'Reports have come in from the space above <span class="yellow">Port ' . $player->getSectorID() . '</span> and have confirmed our <span class="red">siege</span>!<br />';
 //		$text .= $mainText;
-//		$text = mysql_real_escape_string($text);
 //		$thread_id = 0;
 //		$db->query('SELECT * FROM alliance_thread_topic WHERE game_id = ' . $db->escapeNumber($player->getGameID()) . ' AND alliance_id = ' . $db->escapeNumber($player->getAllianceID()) . ' AND topic = '.$db->escapeString($topic).' LIMIT 1');
 //		if ($db->nextRecord()) $thread_id = $db->getField('thread_id');

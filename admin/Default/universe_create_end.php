@@ -21,8 +21,9 @@ $planetAccess = TRUE;
 $exemptWith = TRUE;
 $mbMessages = TRUE;
 $sendAllMsg = TRUE;
-$db->query('REPLACE INTO alliance_has_roles (alliance_id, game_id, role_id, role, with_per_day, remove_member, change_pass, change_mod, change_roles, planet_access, exempt_with, mb_messages, send_alliance_msg) ' .
-			'VALUES (302, '.$game_id.', 1, \'Leader\', '.$withPerDay.', '.$db->escapeString($removeMember).', '.$db->escapeString($changePass).', '.$db->escapeString($changeMOD).', '.$db->escapeString($changeRoles).', '.$db->escapeString($planetAccess).', '.$db->escapeString($exemptWith).', '.$db->escapeString($mbMessages).', '.$db->escapeString($sendAllMsg).')');
+$viewBonds = TRUE
+$db->query('REPLACE INTO alliance_has_roles (alliance_id, game_id, role_id, role, with_per_day, remove_member, change_pass, change_mod, change_roles, planet_access, exempt_with, mb_messages, send_alliance_msg, view_bonds) ' .
+			'VALUES (302, '.$game_id.', 1, \'Leader\', '.$withPerDay.', '.$db->escapeString($removeMember).', '.$db->escapeString($changePass).', '.$db->escapeString($changeMOD).', '.$db->escapeString($changeRoles).', '.$db->escapeString($planetAccess).', '.$db->escapeString($exemptWith).', '.$db->escapeString($mbMessages).', '.$db->escapeString($sendAllMsg).', '.$db->escapeString($viewBonds).')');
 $withPerDay = ALLIANCE_BANK_UNLIMITED;
 $removeMember = FALSE;
 $changePass = FALSE;
@@ -32,8 +33,9 @@ $planetAccess = TRUE;
 $exemptWith = FALSE;
 $mbMessages = FALSE;
 $sendAllMsg = FALSE;
-$db->query('REPLACE INTO alliance_has_roles (alliance_id, game_id, role_id, role, with_per_day, remove_member, change_pass, change_mod, change_roles, planet_access, exempt_with, mb_messages, send_alliance_msg) ' .
-			'VALUES (302, '.$game_id.', 2, \'New Member\', '.$withPerDay.', '.$db->escapeString($removeMember).', '.$db->escapeString($changePass).', '.$db->escapeString($changeMOD).', '.$db->escapeString($changeRoles).', '.$db->escapeString($planetAccess).', '.$db->escapeString($exemptWith).', '.$db->escapeString($mbMessages).', '.$db->escapeString($sendAllMsg).')');
+$viewBonds = FALSE;
+$db->query('REPLACE INTO alliance_has_roles (alliance_id, game_id, role_id, role, with_per_day, remove_member, change_pass, change_mod, change_roles, planet_access, exempt_with, mb_messages, send_alliance_msg, view_bonds) ' .
+			'VALUES (302, '.$game_id.', 2, \'New Member\', '.$withPerDay.', '.$db->escapeString($removeMember).', '.$db->escapeString($changePass).', '.$db->escapeString($changeMOD).', '.$db->escapeString($changeRoles).', '.$db->escapeString($planetAccess).', '.$db->escapeString($exemptWith).', '.$db->escapeString($mbMessages).', '.$db->escapeString($sendAllMsg).', '.$db->escapeString($viewBonds).')');
 $db->query('REPLACE INTO player_has_alliance_role (game_id, account_id, role_id, alliance_id) VALUES ('.$game_id.', '.ACCOUNT_ID_NHL.', 1,302)');
 
 // NHA default topics
@@ -237,8 +239,8 @@ $db->query('REPLACE INTO alliance_thread (game_id, alliance_id, thread_id, reply
 
 $db->query('REPLACE INTO alliance_thread_topic (game_id, alliance_id, thread_id, topic) VALUES ('.$game_id.', 302, 22, \'Ships\')');
 $text = 'Everything you do in SMR is done while you are flying some kind of ship - it can be anything from an escape pod to a huge IkThorne mothership, but you are always the pilot of something. In addition to the neutral ships, each race also has unique ships that only race members can purchase. You can find the SMR shiplist here:<br />	
-<a href="http://www.smrealms.de/ship_list.php target="_blank">http://www.smrealms.de/ship_list.php</a> <br />
-Additional information relating to ships can be found in the <a href="http://wiki.smrealms.de/" target="_blank">SMR wiki</a><br />
+<a href="' . URL . '/ship_list.php target="_blank">' . URL . '/ship_list.php</a> <br />
+Additional information relating to ships can be found in the <a href="' . WIKI_URL . '" target="_blank">SMR wiki</a><br />
 <br />
 It is important to choose ships to match your budget and your needs, and the biggest or most expensive ships are not always the best ones for all purposes.<br />
 <br />
@@ -266,7 +268,7 @@ $db->query('REPLACE INTO alliance_thread (game_id, alliance_id, thread_id, reply
 $db->query('REPLACE INTO alliance_thread_topic (game_id, alliance_id, thread_id, topic) VALUES ('.$game_id.', 302, 23, \'Weapons\')');
 $text = 'SMR has a wide variety of weapons with which to arm your ships, and information on weapon capabilities can be found here:<br />
 <br />
-<a href="http://www.smrealms.de/weapon_list.php">http://www.smrealms.de/weapon_list.php</a><br />>
+<a href="' . URL . '/weapon_list.php">' . URL . '/weapon_list.php</a><br />>
 <br />
 There are a few things to consider when choosing weapons, and the weapon combination that works for one player may not be suited to the style or the needs of another.<br />
 <br />

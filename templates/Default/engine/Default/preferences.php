@@ -68,7 +68,7 @@ if(isset($GameID)) { ?>
 			<tr>
 				<td>Player Name</td>
 				<td>
-					<input type="text" maxlength="32" name="PlayerName" value="<?php echo htmlspecialchars($ThisPlayer->getPlayerName()); ?>" size="32"> <?php
+					<input type="text" maxlength="32" name="PlayerName" value="<?php echo htmlspecialchars($ThisPlayer->getPlayerName()); ?>" size="32"><br/><?php
 					if($ThisPlayer->isNameChanged()) {
 						?>(You have already changed your name for free, further changes will cost <?php echo CREDITS_PER_NAME_CHANGE; ?> SMR Credits)<?php
 					}
@@ -120,6 +120,32 @@ if(isset($GameID)) { ?>
 		<tr>
 			<td>Ban Points:</td>
 			<td><?php echo $ThisAccount->getPoints(); ?></td>
+		</tr>
+		
+		<tr>
+			<td>Friendly Colour:</td>
+			<td><div id="friendlyColorSelector">
+				<div class="preview" style="background-color: #<?php echo $ThisAccount->getFriendlyColour(); ?>"></div>
+				<input type="hidden" name="friendly_color" id="InputFields" value="<?php echo $ThisAccount->getFriendlyColour(); ?>"/></div></td>
+		</tr>
+		
+		<tr>
+			<td>Neutral Colour:</td>
+			<td><div id="neutralColorSelector">
+				<div class="preview" style="background-color: #<?php echo $ThisAccount->getNeutralColour(); ?>"></div>
+				<input type="hidden" name="neutral_color" id="InputFields" value="<?php echo $ThisAccount->getNeutralColour(); ?>"/></div></td>
+		</tr>
+		
+		<tr>
+			<td>Enemy Colour:</td>
+			<td><div id="enemyColorSelector">
+				<div class="preview" style="background-color: #<?php echo $ThisAccount->getEnemyColour(); ?>"></div>
+				<input type="hidden" name="enemy_color" id="InputFields" value="<?php echo $ThisAccount->getEnemyColour(); ?>"/></div></td>
+		</tr>
+		
+		<tr>
+			<td>&nbsp;</td>
+			<td><input type="submit" name="action" value="Update Colours" id="InputFields" /></td>
 		</tr>
 		
 		<tr>
@@ -425,7 +451,7 @@ if(isset($GameID)) { ?>
 		<tr>
 			<td>Transfer Credits:</td>
 			<td>
-				<input type="number" name="amount" id="InputFields" style="width:50px;text-align:center;" /> credits to <?php if(!isset($GameID)){ ?>the account with HoF name of <?php } ?>
+				<input type="number" name="amount" id="InputFields" style="width:50px;" class="center" /> credits to <?php if(!isset($GameID)){ ?>the account with HoF name of <?php } ?>
 				<select name="account_id" id="InputFields"><?php
 					foreach($TransferAccounts as $AccID => $AccOrPlayerName) {
 						?><option value="<?php echo $AccID; ?>"><?php echo $AccOrPlayerName; ?></option><?php
@@ -440,3 +466,5 @@ if(isset($GameID)) { ?>
 		</tr>
 	</table>
 </form>
+
+<script type="text/javascript" src="js/colorpicker.js"></script>

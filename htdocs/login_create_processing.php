@@ -145,6 +145,11 @@ try {
 		//}
 
 		$country_code = $_REQUEST['country_code'];
+		if (strlen($country_code) > 2) {
+			$msg = 'Country code too long!';
+			header('Location: '.URL.'/error.php?msg=' . rawurlencode(htmlspecialchars($msg, ENT_QUOTES)));
+			exit;
+		}
 		//if (empty($country_code)) {
 		//
 		//	$msg = 'Please choose a country!';
@@ -194,23 +199,26 @@ try {
 
 	//Check the captcha if it's a standard registration.
 	if(!$socialLogin && strlen(RECAPTCHA_PRIVATE) > 0) {
-		require_once(LIB.'External/recaptcha/recaptchalib.php');
-		$resp = recaptcha_check_answer (RECAPTCHA_PRIVATE, $_SERVER['REMOTE_ADDR'], $_POST['recaptcha_challenge_field'], $_POST['recaptcha_response_field']);
+		$reCaptcha = new \ReCaptcha\ReCaptcha(RECAPTCHA_PRIVATE);
+		// Was there a reCAPTCHA response?
+		$resp = $reCaptcha->verify(
+			$_POST['g-recaptcha-response'],
+			$_SERVER['REMOTE_ADDR']
+		);
 
-		if (!$resp->is_valid) {
+		if (!$resp->isSuccess()) {
 			$msg = 'Invalid captcha!';
 			header('Location: '.URL.'/error.php?msg=' . rawurlencode(htmlspecialchars($msg, ENT_QUOTES)));
 			exit;
 		}
 	}
 
-	$icq = $_REQUEST['icq'];
 	// create account
 	$timez = $_REQUEST['timez'];
 
 	// creates a new user account object
 	try {
-		$account =& SmrAccount::createAccount($login,$password,$email,$first_name,$last_name,$address,$city,$postal_code,$country_code,$icq,$timez,$referral);
+		$account =& SmrAccount::createAccount($login,$password,$email,$first_name,$last_name,$address,$city,$postal_code,$country_code,$timez,$referral);
 	}
 	catch(Exception $e) {
 		$msg = 'Invalid referral id!';

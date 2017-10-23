@@ -23,8 +23,8 @@ function server_ping($fp, $rdata)
 function server_msg_307($fp, $rdata)
 {
 
-	// :ice.coldfront.net 307 Caretaker MrSpock :is a registered nick
-	if (preg_match('/^:(.*) 307 ' . IRC_BOT_NICK . ' (.*) :is a registered nick\s/i', $rdata, $msg)) {
+	// :alpha.theairlock.net 307 Caretaker MrSpock :is identified for this nick
+	if (preg_match('/^:(.*) 307 ' . IRC_BOT_NICK . ' (.*) :is identified for this nick\s/i', $rdata, $msg)) {
 
 		$server = $msg[1];
 		$nick = $msg[2];
@@ -93,7 +93,7 @@ function server_msg_318($fp, $rdata)
 					$action[4] = time();
 					array_push($actions, $action);
 					fputs($fp, 'NICKSERV INFO ' . $nick . EOL);
-				} else {
+				} else if($action[5] === true) {
 					fputs($fp, 'PRIVMSG ' . $action[1] . ' :' . $nick . ', you are not using a registered nick. Please identify with NICKSERV and try the last command again.' . EOL);
 				}
 

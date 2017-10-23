@@ -23,6 +23,17 @@ function smrBBCode($bbParser, $action, $tagName, $default, $tagParams, $tagConte
 	global $overrideGameID, $disableBBLinks, $player, $account, $var;
 	try {
 		switch($tagName) {
+			case 'combatlog':
+				$logID = (is_numeric($default)) ? $default : $tagParams['id'];
+				if ($action == BBCODE_CHECK) {
+					return true;
+				}
+				$container = create_container('skeleton.php', 'combat_log_viewer.php');
+				$container['action'] = 5;
+				$container['log_ids'] = array($logID);
+				$container['current_log'] = 0;
+				return '<a href="' . SmrSession::getNewHREF($container) . '"><img src="images/notify.gif" width="14" height="11" border="0" title="View the combat log" /></a>';
+			break;
 			case 'player':
 				$playerID = $default;
 				if(!is_numeric($playerID))
@@ -91,7 +102,7 @@ function smrBBCode($bbParser, $action, $tagName, $default, $tagParams, $tagConte
 				}
 				return '<a href="' . $chessGame->getPlayGameHREF() . '">chess game (' . $chessGame->getChessGameID() . ')</a>';
 			break;
-			
+
 			case 'sector':
 				$sectorID = $default;
 
@@ -99,7 +110,7 @@ function smrBBCode($bbParser, $action, $tagName, $default, $tagParams, $tagConte
 					return true;
 				}
 
-				$sectorTag = '<span class="sectorColor">#' . $sectorID . '</span>';
+				$sectorTag = '<span class="sectorColour">#' . $sectorID . '</span>';
 
 				// The use of $var here is for a corner case where an admin can check reported messages whilst being in-game.
 				// Ugly but working, probably want a better mechanism to check if more BBCode tags get added
@@ -109,10 +120,10 @@ function smrBBCode($bbParser, $action, $tagName, $default, $tagParams, $tagConte
 					&& $disableBBLinks===false && $overrideGameID==SmrSession::$game_id) {
 					return '<a href="' . Globals::getPlotCourseHREF($player->getSectorID(), $sectorID) . '">' . $sectorTag . '</a>';
 				}
-				
+
 				return $sectorTag;
-				
-			break;			
+
+			break;
 		}
 	}
 	catch (Exception $e) {
@@ -120,11 +131,11 @@ function smrBBCode($bbParser, $action, $tagName, $default, $tagParams, $tagConte
 	if ($action == BBCODE_CHECK) {
 		return false;
 	}
-	return htmlspecialchars($params['_tag']) . $content . htmlspecialchars($params['_endtag']);
+	return htmlspecialchars($params['_tag']) . $tagContent . htmlspecialchars($params['_endtag']);
 }
 
 function &xmlify(&$str) {
-	$xml = str_replace('&nbsp;','&#160;',htmlentities($str,ENT_COMPAT,'utf-8'));
+	$xml = htmlspecialchars($str, ENT_XML1, 'utf-8');
 	return $xml;
 }
 
@@ -146,6 +157,7 @@ function &bbifyMessage($message,$noLinks=false) {
 				'end_tag' => BBCODE_PROHIBIT,
 				'content' => BBCODE_PROHIBIT,
 			);
+		$bbParser->AddRule('combatlog',$smrRule);
 		$bbParser->AddRule('player',$smrRule);
 		$bbParser->AddRule('alliance',$smrRule);
 		$bbParser->AddRule('race',$smrRule);
@@ -312,7 +324,7 @@ function create_error($message) {
 }
 
 function resetContainer($new_container) {
-	global $time_start,$sn,$container,$var;
+	global $sn,$container,$var;
 
 	// this sn identifies our container later
 
@@ -393,7 +405,7 @@ function get_colored_text_range($value, $maxValue, $text = null, $minValue = 0, 
 			$g_component = 'ff';
 		}
 		$colour = $r_component . $g_component . '00';
-		if ($return_type == 'Color') return $colour;
+		if ($return_type == 'Colour') return $colour;
 		return '<span style="color:#' . $colour . '">' . $text . '</span>';
 	}
 	elseif ($type == 'IRC') {
@@ -401,7 +413,7 @@ function get_colored_text_range($value, $maxValue, $text = null, $minValue = 0, 
 		if ($normalisedValue == 255) $colour = '[k03]';
 		elseif ($normalisedValue == -255) $colour = '[k04]';
 		else $colour = '[k08]';
-		if ($return_type == 'Color') return $colour;
+		if ($return_type == 'Colour') return $colour;
 		return $colour . $text;
 	}
 }
@@ -438,10 +450,11 @@ function makeBold($value) {
 //	return false;
 //
 //}
-
-function hex2bin( $data ) {
-	$len = strlen( $data );
-	return pack( 'H' . $len, $data );
+if(!function_exists('hex2bin')) {
+	function hex2bin( $data ) {
+		$len = strlen( $data );
+		return pack( 'H' . $len, $data );
+	}
 }
 
 function word_filter($string) {
@@ -800,7 +813,7 @@ function doSkeletionAssigns(&$template,&$player,&$ship,&$sector,&$db,&$account) 
 
 	$container['body'] = 'admin_tools.php';
 	$template->assign('AdminToolsLink',SmrSession::getNewHREF($container));
-	
+
 	$container['body'] = 'album_edit.php';
 	$template->assign('EditPhotoLink',SmrSession::getNewHREF($container));
 

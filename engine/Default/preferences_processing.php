@@ -21,6 +21,9 @@ $retype_password = $_REQUEST['retype_password'];
 $HoF_name = trim($_REQUEST['HoF_name']);
 $ircNick = trim($_REQUEST['irc_nick']);
 $cellPhone = trim($_REQUEST['cell_phone']);
+$friendlyColour = $_REQUEST['friendly_color'];
+$neutralColour = $_REQUEST['neutral_color'];
+$enemyColour = $_REQUEST['enemy_color'];
 
 if (USE_COMPATIBILITY && $action == 'Link Account') {
 	if(!$account->linkAccount($_REQUEST['oldAccountLogin'],$_REQUEST['oldAccountPassword'])) {
@@ -56,7 +59,7 @@ else if ($action == 'Save and resend validation code') {
 		'You changed your email address registered within SMR and need to revalidate now!'.EOL.EOL.
 		'   Your new validation code is: '.$account->getValidationCode().EOL.EOL.
 		'The Space Merchant Realms server is on the web at '.URL.'/.'.EOL.
-		'You\'ll find a quick how-to-play here <a href="http://wiki.smrealms.de/index.php?title=Video_Tutorials#A_Look_At_The_Game">SMR Wiki: A look at the game</a>'.EOL.
+		'You\'ll find a quick how-to-play here <a href="' . WIKI_URL . '/index.php?title=Video_Tutorials#A_Look_At_The_Game">SMR Wiki: A look at the game</a>'.EOL.
 		'Please verify within the next 7 days or your account will be automatically deleted.',
 		'From: support@smrealms.de');
 
@@ -149,7 +152,7 @@ elseif ($action == 'Change cell phone') {
 	} else {
 
 		// validate number
-		if (preg_match('/^\+[0-9] {3,24}$/', $cellPhone) == 0)
+		if (preg_match('/^\+[0-9]{3,24}$/', $cellPhone) == 0)
 			create_error('Cell phone numbers must be given in the international format, eg: +15551234567 (For details see this link: http://www.ehow.com/how_5547899_write-phone-number-international-format.html)');
 
 		// and save cell phone
@@ -271,6 +274,18 @@ else if (strpos(trim($action),'Alter Player')===0) {
 	$news = '<span class="blue">ADMIN</span> Please be advised that ' . $old_name . ' has changed their name to ' . $player->getBBLink() . '</span>';
 	$db->query('INSERT INTO news (time, news_message, game_id, dead_id,dead_alliance) VALUES (' . $db->escapeNumber(TIME) . ',' . $db->escape_string($news, FALSE) . ',' . $db->escapeNumber($player->getGameID()) . ',' . $db->escapeNumber($player->getAccountID()) . ',' . $db->escapeNumber($player->getAllianceID()) . ')');
 	$container['msg'] = '<span class="green">SUCCESS: </span>You have changed your player name.';
+}
+else if ($action == 'Update Colours') {
+	if (strlen($friendlyColour) == 6) {
+		$account->setFriendlyColour($friendlyColour);
+	}
+	if (strlen($neutralColour) == 6) {
+		$account->setNeutralColour($neutralColour);
+	}
+	if (strlen($enemyColour) == 6) {
+		$account->setEnemyColour($enemyColour);
+	}
+	$account->update();
 }
 
 forward($container);

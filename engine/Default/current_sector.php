@@ -47,6 +47,12 @@ $template->assignByRef('Sectors',$links);
 
 doTickerAssigns($template, $player, $db);
 
+if(!isset($var['UnreadMissions'])) {
+	$unreadMissions = $player->markMissionsRead();
+	SmrSession::updateVar('UnreadMissions', $unreadMissions);
+}
+$template->assign('UnreadMissions', $var['UnreadMissions']);
+
 // *******************************************
 // *
 // * Force and other Results
@@ -94,12 +100,15 @@ if ($db->nextRecord()) {
 	checkForAttackMessage($msg);
 }
 if (isset($var['AttackMessage'])) {
-  $msg = $var['AttackMessage'];
+	$msg = $var['AttackMessage'];
 	checkForAttackMessage($msg);
+}
+if (isset($var['MissionMessage'])) {
+	$template->assign('MissionMessage', $var['MissionMessage']);
 }
 if (isset($var['msg'])) {
 	checkForForceRefreshMessage($var['msg']);
-	$template->assign('VarMessage',  bbifyMessage($var['msg']));
+	$template->assign('VarMessage', bbifyMessage($var['msg']));
 }
 
 //error msgs take precedence

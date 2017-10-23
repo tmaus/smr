@@ -1,0 +1,14 @@
+{
+    "name": "smr/smr",
+    "description": "SMR",
+    "license": "AGPL-3.0",
+    "require": {
+        "electrolinux/phpquery": "0.9.6",
+        "ext-curl": "*",
+        "ext-json": "^1.0.0",
+        "ext-mysqli": "*",
+        "facebook/graph-sdk": "^5.5.0",
+        "google/recaptcha": "~1.1",
+        "php": "^5.4.0"
+    }
+}

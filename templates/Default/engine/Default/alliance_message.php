@@ -1,37 +1,38 @@
 <?php
 if (count($Threads) > 0) { ?>
-	<div align="center">
-	<table class="standard inset">
-		<tr>
-			<th>Topic</th>
-			<th>Author</th>
-			<th>Replies</th>
-			<th>Last Reply</th>
-		</tr><?php
-		foreach($Threads as $Thread) { ?>
+	<table id="topic-list" class="centered standard inset">
+		<thead>
 			<tr>
-				<td><?php
-					if ($Thread['Unread']) {
-						?><b><?php
-					}
-					?><a href="<?php echo $Thread['ViewHref']; ?>"><?php echo $Thread['Topic']; ?></a><?php
-					if ($Thread['Unread']) {
-						?></b><?php
-					} ?>
-				</td>
-				<td class="shrink noWrap"><?php
-					echo $Thread['Sender'];
-					if($Thread['CanDelete']) {
-						?><br /><small><a href="<?php echo $Thread['DeleteHref']; ?>">Delete Thread!</a></small><?php
-					} ?>
-				</td>
-				<td class="shrink center"><?php echo $Thread['Replies']; ?></td>
-				<td class="shrink noWrap"><?php echo date(DATE_FULL_SHORT, $Thread['SendTime']); ?>
-				</td>
-			</tr><?php
-		} ?>
-		</table>
-	</div><br /><?php
+				<th class="sort" data-sort="topic">Topic</th>
+				<th class="sort shrink" data-sort="author">Author</th>
+				<th class="sort shrink" data-sort="replies">Replies</th>
+				<th class="sort shrink" data-sort="lastReply">Last Reply</th>
+			</tr>
+		</thead>
+		<tbody class="list"><?php
+			foreach($Threads as $Thread) { ?>
+				<tr id="topic-<?php echo $Thread['ThreadID']; ?>" class="ajax">
+					<td class="topic"><?php
+						if ($Thread['Unread']) {
+							?><b><?php
+						}
+						?><a href="<?php echo $Thread['ViewHref']; ?>"><?php echo $Thread['Topic']; ?></a><?php
+						if ($Thread['Unread']) {
+							?></b><?php
+						} ?>
+					</td>
+					<td class="author noWrap"><?php
+						echo $Thread['Sender'];
+						if($Thread['CanDelete']) {
+							?><br /><small><a href="<?php echo $Thread['DeleteHref']; ?>">Delete Thread!</a></small><?php
+						} ?>
+					</td>
+					<td class="replies center"><?php echo $Thread['Replies']; ?></td>
+					<td class="lastReply noWrap"><?php echo date(DATE_FULL_SHORT, $Thread['SendTime']); ?></td>
+				</tr><?php
+			} ?>
+		</tbody>
+	</table><br /><?php
 }
 
 if (isset($CreateNewThreadFormHref)) { ?>
@@ -42,7 +43,7 @@ if (isset($CreateNewThreadFormHref)) { ?>
 		<tr>
 			<td class="top">Topic:&nbsp;</td>
 			<td class="mb"><input type="text" name="topic" size="30" value="<?php if(isset($Topic)) { echo htmlspecialchars($Topic); } ?>"></td>
-			<td style="text-align:left;">For Alliance Eyes Only:<input id="InputFields" name="allEyesOnly" type="checkbox"<?php if(isset($AllianceEyesOnly) && $AllianceEyesOnly) { ?>checked="checked" <?php } ?>></td>
+			<td>For Alliance Eyes Only:<input id="InputFields" name="allEyesOnly" type="checkbox"<?php if(isset($AllianceEyesOnly) && $AllianceEyesOnly) { ?>checked="checked" <?php } ?>></td>
 		</tr>
 		<tr>
 			<td class="top">Body:&nbsp;</td>
@@ -53,3 +54,12 @@ if (isset($CreateNewThreadFormHref)) { ?>
 	</form><?php
 }
 ?>
+<script type="text/javascript" src="js/list.1.0.0.custom.min.js"></script>
+<script>
+var list = new List('topic-list', {
+	valueNames: ['topic', 'author', 'replies', 'lastReply'],
+	sortFunction: function(a, b) {
+		return list.sort.naturalSort(a.values()[this.valueName].replace(/<.*?>|,/g,''), b.values()[this.valueName].replace(/<.*?>|,/g,''), this);
+	}
+});
+</script>

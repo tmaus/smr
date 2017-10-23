@@ -460,6 +460,17 @@ class SmrSector {
 		$this->setLink($dir,0);
 		$this->getNeighbourSector($dir)->setLink(self::oppositeDir($dir),0);
 	}
+	/**
+	 * Cannot be used for Warps
+	 */
+	public function toggleLink($dir) {
+		if($this->hasLink($dir)) {
+			$this->disableLink($dir);
+		}
+		else {
+			$this->enableLink($dir);
+		}
+	}
 
 	protected static function oppositeDir($dir) {
 		switch($dir) {
@@ -589,11 +600,15 @@ class SmrSector {
 		SmrPort::removePort($this->getGameID(),$this->getSectorID());
 	}
 
-	public function hasCachedPort(AbstractSmrPlayer &$player) {
+	public function hasCachedPort(AbstractSmrPlayer &$player=null) {
 		return $this->getCachedPort($player)!==false;
 	}
 
-	public function &getCachedPort(AbstractSmrPlayer &$player) {
+	public function &getCachedPort(AbstractSmrPlayer &$player=null) {
+		if($player == null) {
+			$return = false;
+			return $return;
+		}
 		return SmrPort::getCachedPort($this->getGameID(),$this->getSectorID(),$player->getAccountID());
 	}
 
@@ -643,8 +658,8 @@ class SmrSector {
 		return SmrPlanet::getPlanet($this->getGameID(),$this->getSectorID());
 	}
 
-	public function &createPlanet() {
-		return SmrPlanet::createPlanet($this->getGameID(),$this->getSectorID());
+	public function &createPlanet($type=1) {
+		return SmrPlanet::createPlanet($this->getGameID(),$this->getSectorID(), $type);
 	}
 
 	public function removePlanet() {
@@ -655,8 +670,8 @@ class SmrSector {
 		return count($this->getForces()) > 0;
 	}
 
-	public function hasEnemyForces(AbstractSmrPlayer &$player) {
-		if(!$this->hasForces())
+	public function hasEnemyForces(AbstractSmrPlayer &$player=null) {
+		if($player == null || !$this->hasForces())
 			return false;
 		$forces =& $this->getForces();
 		foreach($forces as &$force) {
@@ -678,8 +693,8 @@ class SmrSector {
 		return $enemyForces;
 	}
 
-	public function hasFriendlyForces(AbstractSmrPlayer &$player) {
-		if(!$this->hasForces())
+	public function hasFriendlyForces(AbstractSmrPlayer &$player=null) {
+		if($player == null || !$this->hasForces())
 			return false;
 		$forces =& $this->getForces();
 		foreach($forces as &$force) {
@@ -724,24 +739,40 @@ class SmrSector {
 		return count($this->getOtherTraders($player)) > 0;
 	}
 
-	public function hasEnemyTraders(AbstractSmrPlayer &$player) {
-		if(!$this->hasOtherTraders($player))
+	public function hasEnemyTraders(AbstractSmrPlayer &$player=null) {
+		if($player == null || !$this->hasOtherTraders($player))
 			return false;
 		$otherPlayers =& $this->getOtherTraders($player);
 		foreach($otherPlayers as &$otherPlayer) {
-			if(!$player->traderNAPAlliance($otherPlayer))
+			if(!$player->traderNAPAlliance($otherPlayer) 
+				&& !$otherPlayer->hasNewbieTurns()
+				&& !$otherPlayer->hasFederalProtection()) {
 				return true;
+			}
 		} unset($otherPlayer);
 		return false;
 	}
 
-	public function hasFriendlyTraders(AbstractSmrPlayer &$player) {
-		if(!$this->hasOtherTraders($player))
+	public function hasFriendlyTraders(AbstractSmrPlayer &$player=null) {
+		if($player == null || !$this->hasOtherTraders($player))
 			return false;
 		$otherPlayers =& $this->getOtherTraders($player);
 		foreach($otherPlayers as &$otherPlayer) {
 			if($player->traderNAPAlliance($otherPlayer))
 				return true;
+		} unset($otherPlayer);
+		return false;
+	}
+	
+	public function hasProtectedTraders(AbstractSmrPlayer &$player=null) {
+		if($player == null || !$this->hasOtherTraders($player))
+			return false;
+		$otherPlayers =& $this->getOtherTraders($player);
+		foreach($otherPlayers as &$otherPlayer) {
+			if(!$player->traderNAPAlliance($otherPlayer) 
+				&& ($otherPlayer->hasNewbieTurns() || $otherPlayer->hasFederalProtection())) {
+				return true;
+			}
 		} unset($otherPlayer);
 		return false;
 	}
@@ -789,7 +820,7 @@ class SmrSector {
 				}
 			}
 		}
-		return self::limitFightingTraders($fightingPlayers, $attackingPlayer, MAXIMUM_PLANET_FLEET_SIZE);
+		return self::limitFightingTraders($fightingPlayers, $attackingPlayer, min($defendingPlanet->getMaxAttackers(),MAXIMUM_PLANET_FLEET_SIZE));
 	}
 
 	public function &getFightingTraders(AbstractSmrPlayer &$attackingPlayer, AbstractSmrPlayer &$defendingPlayer, $checkForCloak=false) {

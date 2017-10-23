@@ -4,6 +4,7 @@ require_once('SmrForce.class.inc');
 require_once('SmrGame.class.inc');
 require_once('SmrAlliance.class.inc');
 require_once('missions.inc');
+require_once(get_file_loc('Plotter.class.inc'));
 
 abstract class AbstractSmrPlayer {
 	protected $db;
@@ -47,6 +48,9 @@ abstract class AbstractSmrPlayer {
 	protected $missions;
 
 	protected $visitedSectors;
+	protected $allianceRoles = array(
+		0 => 0
+	);
 
 	protected $gpWriter;
 	protected $HOF;
@@ -344,11 +348,12 @@ abstract class AbstractSmrPlayer {
 	public function setCredits($credits) {
 		if($this->credits == $credits)
 			return;
-		if (has_privilege('Money Doesn\'t Matter',$this->accountID)) return;
+		if (has_privilege('Money Doesn\'t Matter',$this->accountID)) 
+			return;
 		if($credits < 0)
 			throw new Exception('Trying to set negative credits.');
 		if($credits > MAX_MONEY)
-			throw new Exception('Trying to set more than max credits.');
+			$credits = MAX_MONEY;
 		$this->credits = $credits;
 		$this->hasChanged=true;
 	}
@@ -410,7 +415,7 @@ abstract class AbstractSmrPlayer {
 	}
 
 	public function getPlayerName() {
-		return $this->playerName . ($this->isNPC() ? ' <span class="npcColor">[NPC]</span>' : '');
+		return $this->playerName . ($this->isNPC() ? ' <span class="npcColour">[NPC]</span>' : '');
 	}
 
 	public function setPlayerName($name) {
@@ -421,7 +426,7 @@ abstract class AbstractSmrPlayer {
 	public function getDisplayName($includeAlliance=false) {
 		$return = get_colored_text($this->getAlignment(),$this->playerName.' ('.$this->getPlayerID().')');
 		if($this->isNPC()) {
-			$return .= ' <span class="npcColor">[NPC]</span>';
+			$return .= ' <span class="npcColour">[NPC]</span>';
 		}
 		if($includeAlliance) {
 			$return.= ' (' . $this->getAllianceName() . '</a>' . ')';
@@ -507,8 +512,27 @@ abstract class AbstractSmrPlayer {
 		}
 	}
 
+	public function getAllianceRole($allianceID = false) {
+		if ($allianceID === false) {
+			$allianceID = $this->getAllianceID();
+		}
+		if(!isset($this->allianceRoles[$allianceID])) {
+			$this->allianceRoles[$allianceID] = 0;
+			$this->db->query('SELECT role_id
+						FROM player_has_alliance_role
+						WHERE account_id=' . $this->db->escapeNumber($this->getAccountID()) . '
+						AND game_id=' . $this->db->escapeNumber($this->getGameID()) . '
+						AND alliance_id=' . $this->db->escapeNumber($allianceID) . '
+						LIMIT 1');
+			if ($this->db->nextRecord()) {
+				$this->allianceRoles[$allianceID] = $this->db->getInt('role_id');
+			}
+		}
+		return $this->allianceRoles[$allianceID];
+	}
+
 	public function getSpanColour() {
-		return get_colored_name('NA', $this->alignment, 'Game', 'Color');
+		return get_colored_name('NA', $this->alignment, 'Game', 'Colour');
 	}
 
 	public function isCombatDronesKamikazeOnMines() {
@@ -996,27 +1020,35 @@ abstract class AbstractSmrPlayer {
 		return $this->completedMissions;
 	}
 
-	function getMissions() {
+	public function getMissions() {
 		if(!isset($this->missions)) {
-			//Get Player missions
-			global $MISSIONS;
 			$this->db->query('SELECT * FROM player_has_mission WHERE ' . $this->SQL);
 			$this->missions = array();
 			while ($this->db->nextRecord()) {
-				$this->missions[$this->db->getField('mission_id')] = array(
-								'On Step' => $this->db->getField('on_step'),
-								'Total' => $this->db->getField('total_steps'),
-								'Progress' => $this->db->getField('progress'),
-								'Next Step' => $this->db->getField('next_step'),
-								'Expires' => $this->db->getField('step_fails'),
-								'Mission ID' => $this->db->getField('mission_id'),
-								'Sector' => $this->db->getField('mission_sector'),
-								'Starting Sector' => $this->db->getField('starting_sector')
-								);
-				$this->rebuildMission($this->db->getField('mission_id'));
+				$missionID = $this->db->getInt('mission_id');
+				$this->missions[$missionID] = array(
+					'On Step' => $this->db->getInt('on_step'),
+					'Progress' => $this->db->getInt('progress'),
+					'Unread' => $this->db->getBoolean('unread'),
+					'Expires' => $this->db->getInt('step_fails'),
+					'Sector' => $this->db->getInt('mission_sector'),
+					'Starting Sector' => $this->db->getInt('starting_sector')
+				);
+				$this->rebuildMission($missionID);
 			}
 		}
 		return $this->missions;
+	}
+
+	public function getActiveMissions() {
+		global $MISSIONS;
+		$missions = $this->getMissions();
+		foreach($missions as $missionID => $mission) {
+			if($mission['On Step'] >= count($MISSIONS[$missionID]['Steps'])) {
+				unset($missions[$missionID]);
+			}
+		}
+		return $missions;
 	}
 
 	function getMission($missionID) {
@@ -1030,81 +1062,89 @@ abstract class AbstractSmrPlayer {
 		return $this->getMission($missionID) !== false;
 	}
 
-	function updateMission($missionID,$keyOrUpdateArray,$newInfo=false) {
+	function updateMission($missionID) {
 		$this->getMissions();
 		if(isset($this->missions[$missionID])) {
-			if(is_array($keyOrUpdateArray)) {
-				$set = '';
-				foreach($keyOrUpdateArray as $bit => $newInfo) {
-					$field = $this->missionKeyToField($bit);
-					if($field!==false) {
-						$this->missions[$missionID][$bit]=$newInfo;
-						$set .= '`'.$field.'` = '.$this->db->escapeString($newInfo).',';
-					}
-				}
-				if($set!=='') {
-					$set=substr($set,0,-1);
-					$this->db->query('UPDATE player_has_mission SET '.$set.' WHERE '.$this->SQL.' AND mission_id = '.$this->db->escapeNumber($missionID).' LIMIT 1');
-					$this->rebuildMission($missionID);
-					return true;
-				}
-			}
-			else {
-				$field = $this->missionKeyToField($keyOrUpdateArray);
-				if($field!==false) {
-					$this->missions[$missionID][$keyOrUpdateArray]=$newInfo;
-					$this->db->query('UPDATE player_has_mission SET `'.$field.'` = '.$this->db->escapeString($newInfo).' WHERE '.$this->SQL.' AND mission_id = '.$this->db->escapeNumber($missionID).' LIMIT 1');
-					$this->rebuildMission($missionID);
-					return true;
-				}
-			}
+			$mission = $this->missions[$missionID];
+			$this->db->query('
+				UPDATE player_has_mission
+				SET on_step = ' . $this->db->escapeNumber($mission['On Step']) . ',
+					progress = ' . $this->db->escapeNumber($mission['Progress']) . ',
+					unread = ' . $this->db->escapeBoolean($mission['Unread']) . ',
+					starting_sector = ' . $this->db->escapeNumber($mission['Starting Sector']) . ',
+					mission_sector = ' . $this->db->escapeNumber($mission['Sector']) . ',
+					step_fails = ' . $this->db->escapeNumber($mission['Expires']) . '
+				WHERE ' . $this->SQL . ' AND mission_id = ' . $this->db->escapeNumber($missionID) . ' LIMIT 1'
+			);
+			return true;
 		}
 		return false;
 	}
 
-	function addMission($missionID,$randomSector=0) {
+	private function setupMissionStep($missionID) {
 		global $MISSIONS;
+		$mission =& $this->missions[$missionID];
+		$step = $MISSIONS[$missionID]['Steps'][$mission['On Step']];
+		if(isset($step['PickSector'])) {
+			$realX = Plotter::getX($step['PickSector']['Type'], $step['PickSector']['X'], $this->getGameID());
+			if($realX === false) {
+				throw new Exception('Invalid PickSector definition in mission: ' . $missionID);
+			}
+			$path =& Plotter::findDistanceToX($realX, $this->getSector(), true, null, $this);
+			if($path === false) {
+				throw new Exception('Cannot find location: ' . $missionID);
+			}
+			$mission['Sector'] = $path->getEndSectorID();
+		}
+	}
+
+	function addMission($missionID) {
 		$this->getMissions();
 
 		if(isset($this->missions[$missionID]))
 			return;
+		$sector = 0;
 
-		$mission = $MISSIONS[$missionID];
-		$playerMission = array(
-						'On Step' => 1,
-						'Total' => sizeof($mission['Steps']),
-						'Progress' => 0,
-						'Next Step' => 'TRUE',
-						'Expires' => (TIME + 86400),
-						'Mission ID' => $missionID,
-						'Sector' => $randomSector,
-						'Starting Sector' => $this->getSectorID()
-						);
+		$mission = array(
+			'On Step' => 0,
+			'Progress' => 0,
+			'Unread' => true,
+			'Expires' => (TIME + 86400),
+			'Sector' => $sector,
+			'Starting Sector' => $this->getSectorID()
+		);
 
-		$this->db->query('REPLACE INTO player_has_mission (game_id,account_id,mission_id,on_step,progress,next_step,total_steps,starting_sector,mission_sector,step_fails) ' .
-				'VALUES ('.$this->db->escapeNumber($this->gameID).','.$this->db->escapeNumber($this->accountID).','.$this->db->escapeNumber($missionID).','.$this->db->escapeNumber($playerMission['On Step']).','.$this->db->escapeNumber($playerMission['Progress']).','.$this->db->escapeString($playerMission['Next Step']).','.$this->db->escapeNumber($playerMission['Total']).','.$this->db->escapeNumber($playerMission['Starting Sector']).','.$this->db->escapeNumber($playerMission['Sector']).','.$this->db->escapeNumber($playerMission['Expires']).')');
-		$this->missions[$missionID] = $playerMission;
+		$this->missions[$missionID] =& $mission;
+		$this->setupMissionStep($missionID);
 		$this->rebuildMission($missionID);
+
+		$this->db->query('
+			REPLACE INTO player_has_mission (game_id,account_id,mission_id,on_step,progress,unread,starting_sector,mission_sector,step_fails)
+			VALUES ('.$this->db->escapeNumber($this->gameID).','.$this->db->escapeNumber($this->accountID).','.$this->db->escapeNumber($missionID).','.$this->db->escapeNumber($mission['On Step']).','.$this->db->escapeNumber($mission['Progress']).','.$this->db->escapeBoolean($mission['Unread']).','.$this->db->escapeNumber($mission['Starting Sector']).','.$this->db->escapeNumber($mission['Sector']).','.$this->db->escapeNumber($mission['Expires']).')'
+		);
 	}
 
 	function rebuildMission($missionID) {
 		global $MISSIONS;
-		$RACES = Globals::getRaces();
-		$missionInfo = $this->missions[$missionID];
-		$currentStep = $MISSIONS[$missionID]['Steps'][$missionInfo['On Step']];
-		$detail = str_replace(array('<Race>','<Sector>','<Starting Sector>','<trader>'),array($RACES[$this->getRaceID()],$missionInfo['Sector'],$missionInfo['Starting Sector'],$this->playerName),$currentStep['Detail']);
-		$text = str_replace(array('<Race>','<Sector>','<Starting Sector>','<trader>'),array($RACES[$this->getRaceID()],$missionInfo['Sector'],$missionInfo['Starting Sector'],$this->playerName),$currentStep['Text']);
-		$task = str_replace(array('<Race>','<Sector>','<Starting Sector>','<trader>'),array($RACES[$this->getRaceID()],$missionInfo['Sector'],$missionInfo['Starting Sector'],$this->playerName),$currentStep['Task']);
-		if (isset($currentStep['Level']))
-			$step_level = str_replace('<Player Level>',$this->levelID,$currentStep['Level']);
-		else $step_level = 0;
+		$mission = $this->missions[$missionID];
 		$this->missions[$missionID]['Name'] = $MISSIONS[$missionID]['Name'];
-		$this->missions[$missionID]['Location'] = $MISSIONS[$missionID]['Location'];
-		$this->missions[$missionID]['Task']['Step'] = $currentStep['Step'];
-		$this->missions[$missionID]['Task']['Level'] = $step_level;
-		$this->missions[$missionID]['Task']['Detail'] = $detail;
-		$this->missions[$missionID]['Task']['Text'] = $text;
-		$this->missions[$missionID]['Task']['Task'] = $task;
+
+		if($mission['On Step'] >= count($MISSIONS[$missionID]['Steps'])) {
+			// If we have completed this mission just use false to indicate no current task.
+			$currentStep = false;
+		}
+		else {
+			$currentStep = $MISSIONS[$missionID]['Steps'][$mission['On Step']];
+			$currentStep['Text'] = str_replace(array('<Race>','<Sector>','<Starting Sector>','<trader>'),array($this->getRaceID(),$mission['Sector'],$mission['Starting Sector'],$this->playerName),$currentStep['Text']);
+			$currentStep['Task'] = str_replace(array('<Race>','<Sector>','<Starting Sector>','<trader>'),array($this->getRaceID(),$mission['Sector'],$mission['Starting Sector'],$this->playerName),$currentStep['Task']);
+			if (isset($currentStep['Level'])) {
+				$currentStep['Level'] = str_replace('<Player Level>',$this->levelID,$currentStep['Level']);
+			}
+			else {
+				$currentStep['Level'] = 0;
+			}
+		}
+		$this->missions[$missionID]['Task'] = $currentStep;
 	}
 
 	function deleteMission($missionID) {
@@ -1117,39 +1157,65 @@ abstract class AbstractSmrPlayer {
 		return false;
 	}
 
-	protected function missionKeyToField($bit) {
-		$field = false;
-		switch($bit) {
-			case 'On Step':
-				$field='on_step';
-			break;
-			case 'Total':
-				$field='total_steps';
-			break;
-			case 'Progress':
-				$field='progress';
-			break;
-			case 'Next Step':
-				$field='next_step';
-			break;
-			case 'Expires':
-				$field='step_fails';
-			break;
-			case 'Mission ID':
-				$field='mission_id';
-			break;
+	public function markMissionsRead() {
+		$this->getMissions();
+		$unreadMissions = array();
+		foreach($this->missions as $missionID => &$mission) {
+			if($mission['Unread']) {
+				$unreadMissions[] = $missionID;
+				$mission['Unread'] = false;
+				$this->updateMission($missionID);
+			}
 		}
-		return $field;
+		return $unreadMissions;
+	}
+
+	public function claimMissionReward($missionID) {
+		global $MISSIONS;
+		$this->getMissions();
+		$mission =& $this->missions[$missionID];
+		if($mission === false) {
+			throw new Exception('Unknown mission: ' . $missionID);
+		}
+		if($mission['Task'] === false || $mission['Task']['Step'] != 'Claim') {
+			throw new Exception('Cannot claim mission: ' . $missionID . ', for step: ' . $mission['On Step']);
+		}
+		$mission['On Step']++;
+		$mission['Unread'] = true;
+		foreach($mission['Task']['Rewards'] as $rewardItem => $amount) {
+			switch($rewardItem) {
+				case 'Credits':
+					$this->increaseCredits($amount);
+				break;
+				case 'Experience':
+					$this->increaseExperience($amount);
+				break;
+			}
+		}
+		$rewardText = $mission['Task']['Rewards']['Text'];
+		if($mission['On Step'] < count($MISSIONS[$missionID]['Steps'])) {
+			// If we haven't finished the mission yet then 
+			$this->setupMissionStep($missionID);
+		}
+		$this->rebuildMission($missionID);
+		$this->updateMission($missionID);
+		return $rewardText;
 	}
 
 	public function getAvailableMissions() {
 		global $MISSIONS;
 		$availableMissions = array();
-		foreach($MISSIONS as $mission) {
-			if($this->hasMission($mission['ID']))
+		foreach($MISSIONS as $missionID => $mission) {
+			if($this->hasMission($missionID)) {
 				continue;
-			if($this->getSector()->hasX($mission['Location']))
-				$availableMissions[] = $mission;
+			}
+			$realX = Plotter::getX($mission['HasX']['Type'], $mission['HasX']['X'], $this->getGameID());
+			if($realX === false) {
+				throw new Exception('Invalid HasX definition in mission: ' . $missionID);
+			}
+			if($this->getSector()->hasX($realX)) {
+				$availableMissions[$missionID] = $mission;
+			}
 		}
 		return $availableMissions;
 	}
@@ -1180,7 +1246,18 @@ abstract class AbstractSmrPlayer {
 				break;
 
 			}
-
+		$this->getMissions();
+		foreach($this->missions as $missionID => &$mission) {
+			if($mission['Task'] !== false && $mission['Task']['Step'] == $actionID) {
+				if(checkMissionRequirements($values, $mission, $this) === true) {
+					$mission['On Step']++;
+					$mission['Unread'] = true;
+					$this->setupMissionStep($missionID);
+					$this->rebuildMission($missionID);
+					$this->updateMission($missionID);
+				}
+			}
+		}
 	}
 
 	public function canSeeAny(array &$otherPlayerArray) {

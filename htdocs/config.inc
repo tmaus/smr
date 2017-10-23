@@ -13,14 +13,16 @@ function logException(Exception $e) {
 			'E-Mail: '.$account->getEmail().EOL.EOL.'-----------'.EOL.EOL;
 	}
 	$message .= 'Error Message: '.$e->getMessage().EOL.EOL.'-----------'.EOL.EOL;
-	if($currMySQLError = mysql_error()) {
+	require_once(LIB . '/Default/SmrMySqlDatabase.class.inc');
+	$db = new SmrMySqlDatabase();
+	if($currMySQLError = $db->getError()) {
 		$errorType = 'Database Error';
-		$message .= 'MySQL Error MSG: '.mysql_error().EOL.EOL.'-----------'.EOL.EOL;
+		$message .= 'MySQL Error MSG: '.$db->getError().EOL.EOL.'-----------'.EOL.EOL;
 	}
 	$message .=	'Trace MSG: '.$e->getTraceAsString().EOL.EOL.'-----------'.EOL.EOL.
 		'$var: '.var_export($var,true).EOL.EOL.'-----------'.EOL.EOL.
 		'USING_AJAX: '.(defined('USING_AJAX')?var_export(USING_AJAX,true):'undefined');
-		
+
 	try {
 		if(function_exists('release_lock'))
 			release_lock(); //Try to release lock so they can carry on normally
@@ -29,12 +31,12 @@ function logException(Exception $e) {
 		$message .= EOL.EOL.'-----------'.EOL.EOL.
 					'Releasing Lock Failed' .EOL.
 					'Message: ' . $ee->getMessage() .EOL.EOL;
-		if($currMySQLError!=mysql_error()) {
-			$message .= 'MySQL Error MSG: '.mysql_error().EOL.EOL;
+		if($currMySQLError!=$db->getError()) {
+			$message .= 'MySQL Error MSG: '.$db->getError().EOL.EOL;
 		}
 		$message .= 'Trace: ' . $ee->getTraceAsString();
 	}
-	// var_dump($message);exit;
+
 	if(defined('NPC_SCRIPT')) {
 		global $NPC_LOGIN;
 		try {
@@ -49,13 +51,18 @@ function logException(Exception $e) {
 			$message .= EOL.EOL.'-----------'.EOL.EOL.
 						'Releasing NPC Failed' .EOL.
 						'Message: ' . $ee->getMessage() .EOL.EOL;
-			if($currMySQLError!=mysql_error()) {
-				$message .= 'MySQL Error MSG: '.mysql_error().EOL.EOL;
+			if($currMySQLError!=$db->getError()) {
+				$message .= 'MySQL Error MSG: '.$db->getError().EOL.EOL;
 			}
 			$message .= 'Trace: ' . $ee->getTraceAsString();
 		}
 	}
-	
+
+	if(ENABLE_DEBUG) {
+		var_dump($message);
+		exit;
+	}
+
 	try {
 		if(is_object($player) && method_exists($player,'sendMessageToBox'))
 			$player->sendMessageToBox(BOX_BUGS_AUTO, $message);
@@ -99,11 +106,20 @@ function microtimeDiff($m1,$m2) {
 }
 
 function microtimeSec($microtime) {
-	return (int)substr($microtime,11);
+	if (strlen($microtime) == 21) {
+		return substr($microtime,11);
+	} else {
+		throw new Exception('Not a microtime! ('.$microtime.')');
+	}
 }
 
 function microtimeMSec($microtime) {
-	return (int)substr($microtime,2,6);
+	if (strlen($microtime) == 21) {
+		// Do not cast to int, because the substring can begin with '0'
+		return substr($microtime,2,6);
+	} else {
+		throw new Exception('Not a microtime! ('.$microtime.')');
+	}
 }
 
 function explodeElement($delimiter, $string, $index) {
@@ -111,6 +127,7 @@ function explodeElement($delimiter, $string, $index) {
 	return $arr[$index];
 }
 
+require_once(__DIR__ . '/../vendor/autoload.php');
 require_once('config.php');
 
 //	//num races

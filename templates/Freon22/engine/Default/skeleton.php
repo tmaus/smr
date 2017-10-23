@@ -1,28 +1,8 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
-	<head>
-		<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-		<title><?php echo $Title; ?> <?php if(isset($GameName)) echo $GameName; ?></title>
-		<meta http-equiv="pragma" content="no-cache" /><?php
-		if(!is_object($ThisAccount) || $ThisAccount->isDefaultCSSEnabled()) { ?>
-			<link rel="stylesheet" type="text/css" href="<?php echo $CSSLink; ?>" />
-			<link rel="stylesheet" type="text/css" href="<?php echo $CSSColourLink; ?>" /><?php
-		}
-		if(isset($ExtraCSSLink)) {
-			?><link rel="stylesheet" type="text/css" href="<?php echo $ExtraCSSLink; ?>" /><?php
-		} ?>
-		<style type="text/css">
-			body {
-				font-size:<?php echo $FontSize; ?>%;
-			}
-		</style><?php
-		if(isset($HeaderTemplateInclude)) {
-			$this->includeTemplate($HeaderTemplateInclude);
-		} ?>
-		<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
-		<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-		<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
-		<script type="text/javascript" src="js/smr15.js"></script>
+	<head><?php
+		$this->assign('FontSize', $FontSize-20);
+		$this->includeTemplate('includes/Head.inc'); ?>
 	</head>
 	<body>
 		<div id="Container">
@@ -164,7 +144,7 @@
 								}
 								if($ThisShip->hasActiveIllusion()) { ?>
 									<a href="<?php echo $HardwareLink; ?>">
-										<span class="npcColor"><?php echo $ThisShip->getIllusionShipName(); ?></span><br />
+										<span class="npcColour"><?php echo $ThisShip->getIllusionShipName(); ?></span><br />
 										IG Rating : <?php echo $ThisShip->getIllusionAttack(); ?>/<?php echo $ThisShip->getIllusionDefense(); ?>
 									</a><br />
 									<br /><?php
@@ -238,7 +218,7 @@
 							}
 							$this->includeTemplate($TemplateBody); ?>
 						</div>
-						<div style="width:60%; float: left; text-align: left;">
+						<div style="width:60%; float: left;" class="left">
 							<span style="font-size: xx-small;">Get <b><u>FREE TURNS</u></b> for voting if you see the star, next available <span id="v"><?php if($TimeToNextVote <= 0){ ?>now<?php }else{ ?>in <?php echo format_time($TimeToNextVote,true); } ?></span>.</span>
 							<br /><?php
 							foreach($VoteSites as $VoteSite) {

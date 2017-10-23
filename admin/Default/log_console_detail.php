@@ -37,7 +37,8 @@ else {
 	$db2 = new SmrMySqlDatabase();
 
 	// predefine a color array
-	$avail_colors = array('#FFFFFF', '#FF0000', '#00FF00', '#0000FF');
+	$avail_colors = array('#FFFFFF', '#00FF00', '#FF3377', '#0099FF',
+	                      '#FF0000', '#0000FF');
 
 	// now assign each account id a color
 	for ($i = 0; $i < count($account_ids); $i++) {
@@ -169,7 +170,7 @@ else {
 	$db->query('SELECT * FROM account_has_logs WHERE account_id IN ('.$account_list.') AND log_type_id IN ('.$db->escapeArray($log_type_id_list).') ORDER BY ' . $var['item'] . ' ' . $var['order']);
 	while ($db->nextRecord()) {
 		$account_id		= $db->getInt('account_id');
-		$microtime		= $db->getMicrotime('microtime');
+		$microtime		= $db->getMicrotime('microtime', true); //fix value length errors
 		$message		= stripslashes($db->getField('message'));
 		$log_type_id	= $db->getInt('log_type_id');
 		$sector_id		= $db->getInt('sector_id');
